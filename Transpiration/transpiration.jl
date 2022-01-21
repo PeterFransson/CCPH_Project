@@ -73,13 +73,36 @@ function gₛ2g_C(gₛ::T,PAR::T,LAI::T;cons::CCPH.Constants=CCPH.Constants(),tr
     return g_C
 end
 
-function Calctranpiration(VPD_z::T,Sₑ::T) where {T<:Float64}
-    #Estimate canopy transpiration E_c (mm/d) for Rosinedal based on the model from Tor-Ngern et al. 2017
+function Calctranpiration(VPD_z::T,Sₑ::T;E_cm_ref::T=1.812,s_VPD_z::T=3.121,
+    s_Sₑ::T=18.342) where {T<:Float64}
+    #Tor-Ngern et al. 2017 model for estimating canopy transpiration E_c (mm/d)
+    #Standard paramater values (E_cm_ref,s_VPD_z,s_Sₑ) are taken from the 
+    #original paper for the Rosinedal scots pine stand
+    #--Input--
     #VPD_z vapor pressure deficit (Pa)
     #Sₑ effective saturation (-)    
 
-    E_cm = 1.812*(1-exp(-3.121*VPD_z*10^-3))
-    E_c = E_cm*(1-exp(-18.342*Sₑ))
+    E_cm = E_cm_ref*(1-exp(-s_VPD_z*VPD_z*10^-3))
+    E_c = E_cm*(1-exp(-s_Sₑ*Sₑ))
 
     return E_c
+end
+
+function Est_gₛ(LAI::T,daylight::T;cons::CCPH.Constants=CCPH.Constants(),
+    env::CCPH.EnvironmentStruct=CCPH.EnvironmentStruct()) where {T<:Float64}
+    # Estimate stomatal conductance gₛ (mol C m⁻² leaf area s⁻¹) based on 
+    # Weather data and leaf area index, using the canopy transpiration from
+    # Tor-Ngern et al. 2017
+    #--Input-- 
+    # LAI leaf area index (m² leaf area m⁻² ground area)   
+    # daylight lenght of a single day (s)
+    VPD = env.VPD
+    θₛ = env.θₛ
+    P = env.P    
+    VPD_z = VPD.*daylight/(24*3600)    
+    Sₑ = CCPH.CalcSₑ.(θₛ)
+    E_c = Calctranpiration.(VPD_z,Sₑ) #mm/day
+    E_c *= 10^-3*cons.ρ_H2O/cons.M_H2O/daylight #mol m⁻² s⁻¹
+    gₛ = E_c*P/(VPD*cons.r*LAI)
+    return gₛ
 end
