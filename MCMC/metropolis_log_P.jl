@@ -74,6 +74,6 @@ function metropolis_mcmc(x_current_vec,P_current_vec,p,q_vec::Array{Float64,1},f
         samples_container[j] = samples
         P_samples_container[j] = P_samples
     end
-    save("./Output/"*file_name*".jld","samples_container",samples_container,"P_samples_container",P_samples_container)
+    save("./output/"*file_name*".jld","samples_container",samples_container,"P_samples_container",P_samples_container)
     return nothing
 end

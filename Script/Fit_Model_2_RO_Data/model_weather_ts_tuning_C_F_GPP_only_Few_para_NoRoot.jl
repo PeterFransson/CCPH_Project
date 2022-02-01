@@ -33,8 +33,8 @@ end
 function Run_RO_C_F_CCPH(par::Array{Float64,1},weatherts_F::WeatherTS,
     weatherts_C::WeatherTS,data_F::RoData,data_C::RoData;sim_steps::Integer=83)
     
-    αf,β₁,β₂,b_Jmax,i = 460.0,1.27,-0.27,0.0,1.0
-    Nₛ,rₘ,a_Jmax,Kₓₗ₀,Nₛ_C = par[1:5]    
+    αf,β₁,β₂,b_Jmax = 460.0,1.27,-0.27,0.0
+    Nₛ,rₘ,a_Jmax,Kₓₗ₀,Nₛ_C,i = par[1:6]    
 
     #Fertilized stand
     GPP_model_F = zeros(sim_steps+1)
@@ -62,8 +62,8 @@ end
 function RO_C_F_CCPH_ModelOutput(par::Array{Float64,1},weatherts_F::WeatherTS,
     weatherts_C::WeatherTS,data_F::RoData,data_C::RoData;sim_steps::Integer=83)
 
-    αf,β₁,β₂,b_Jmax,i = 460.0,1.27,-0.27,0.0,1.0
-    Nₛ,rₘ,a_Jmax,Kₓₗ₀,Nₛ_C = par[1:5] 
+    αf,β₁,β₂,b_Jmax = 460.0,1.27,-0.27,0.0
+    Nₛ,rₘ,a_Jmax,Kₓₗ₀,Nₛ_C,i = par[1:6] 
 
     #Fertilized stand
     ModelOutput_F = CCPHOutput[]
@@ -130,20 +130,20 @@ function Calc_error_RO_C_F_CCPH(
 end
 
 function Check_para_RO_C_F_CCPH(par::Array{Float64,1})
-    #Nₛ,rₘ,a_Jmax,Kₓₗ₀,Nₛ_C,X0,τ,Smax,τ_C
-    lo = [0.01,10.0,0.01,0.001,0.01,-8.0,3.0,10.0,3.0]
+    #Nₛ,rₘ,a_Jmax,Kₓₗ₀,Nₛ_C,i,X0,τ,Smax,τ_C
+    lo = [0.001,10.0,0.01,0.001,0.001,0.1,-8.0,1.0,10.0,1.0]
 
-    up = [0.1,40.0,1.0,0.1,0.1,-1.0,15.0,20.0,15.0] 
+    up = [0.1,40.0,1.0,0.1,0.1,6.0,-1.0,15.0,25.0,15.0] 
 
     return any(par.<lo)||any(par.>up)    
 end
 
 function Post_distri_RO_C_F_CCPH(par::Array{Float64,1},RO_data::RO_raw_data)
     if Check_para_RO_C_F_CCPH(par)
-        return post = 0.0
+        return post = -Inf
     else
         try
-            X0,τ,Smax,τ_C = par[6:9]
+            X0,τ,Smax,τ_C = par[7:10]
             weatherts_F,GPP_data_F = create_weather_struct_RO(RO_data;stand_type="Fertilized",X0=X0,τ=τ,Smax=Smax)
             weatherts_C,GPP_data_C = create_weather_struct_RO(RO_data;stand_type="Control",X0=X0,τ=τ_C,Smax=Smax)           
             
@@ -158,7 +158,7 @@ function Post_distri_RO_C_F_CCPH(par::Array{Float64,1},RO_data::RO_raw_data)
             return post = -error_val
         catch err
             println("Parameters Error: ", err)
-            return post = 0.0
+            return post = -Inf
         end
     end
 end
@@ -167,41 +167,41 @@ function run_simple_trait_model_C_F_tuning_RO_ts()
     #Init Ro data
     RO_data = Load_RO_data()    
 
-    nsamples = 10
+    nsamples = 5000
     nchains = 12
 
-    par_guess = [0.036975489745880365, 17.40739827323768, 0.5, 0.01,
-    0.025675473753997178, -4.230533359595931, 12.328105896346644, 19.079489364590533,12.328105896346644]   
+    #par_guess = [0.036975489745880365, 17.40739827323768, 0.5, 0.01,
+    #0.025675473753997178, -4.230533359595931, 12.328105896346644, 19.079489364590533,12.328105896346644]  
+    
+    par_guess = [0.011976551772617215, 25.42466609569836, 0.5009242298864488, 0.023503724920524185,
+    0.010452800544803813,1.0,-1.312709470268466, 3.3784814235281933, 17.510523050796454, 9.566445194647766]
 
     x_current = [par_guess for i = 1:nchains]
     P_current = [Post_distri_RO_C_F_CCPH(par_guess,RO_data) for i = 1:nchains] 
         
     println(P_current)    
     
-    q_vec = [0.04,24.0,0.033,0.01,0.04,-4.0,7.0,16.0,7.0]/25.0
+    q_vec = [0.04,24.0,0.033,0.01,0.04,1.0,-4.0,7.0,16.0,7.0]/25.0
     metropolis_mcmc(x_current,P_current,
-    x::Array{Float64,1}->Post_distri_RO_C_F_CCPH(x::Array{Float64,1},RO_data),q_vec,"RO_C_F_GPP_Only_Few_Para_NoRoot_20220105";
-    n_chains=nchains,n_samples=nsamples,burn_in=10,sample_freq=5) 
-        
+    x::Array{Float64,1}->Post_distri_RO_C_F_CCPH(x::Array{Float64,1},RO_data),q_vec,"RO_C_F_GPP_Only_Few_Para_NoRoot_20220131_2";
+    n_chains=nchains,n_samples=nsamples,burn_in=7000,sample_freq=5)        
 end
 
 function run_C_F_ts_mean()
 
     RO_data = Load_RO_data()  
     
-    #=
-    samples = load("output/RO_C_F_GPP_Only_20211202.jld","samples_container")    
-    P_samples = load("output/RO_C_F_GPP_Only_20211202.jld","P_samples_container")
+    
+    samples = load("./output/RO_C_F_GPP_Only_Few_Para_NoRoot_20220131_2.jld","samples_container")    
+    P_samples = load("./output/RO_C_F_GPP_Only_Few_Para_NoRoot_20220131_2.jld","P_samples_container")
+    Draw_trace_plot(samples,"RO_C_F_GPP_Only_Few_Para_NoRoot_20220131_2")
+    Draw_histogram(samples,"RO_C_F_GPP_Only_Few_Para_NoRoot_20220131_2")
 
-    par = Find_max_sample(samples,P_samples)
-    =#   
-    par = [0.036975489745880365, 17.40739827323768, 0.1, 0.01,
-    0.025675473753997178, -4.230533359595931, 12.328105896346644,
-    19.079489364590533,12.328105896346644]  
-
+    par = Find_max_sample(samples,P_samples)  
+  
     println(par)
 
-    X0,τ,Smax = par[6:9]
+    X0,τ,Smax = par[7:10]
     weatherts_F,GPP_data_F = create_weather_struct_RO(RO_data;stand_type="Fertilized",X0=X0,τ=τ,Smax=Smax)
     weatherts_C,GPP_data_C = create_weather_struct_RO(RO_data;stand_type="Control",X0=X0,τ=τ,Smax=Smax)
     
@@ -325,6 +325,6 @@ function validate_RO_2019()
 end
 =#
 
-run_simple_trait_model_C_F_tuning_RO_ts()
-#run_C_F_ts_mean()
+#run_simple_trait_model_C_F_tuning_RO_ts()
+run_C_F_ts_mean()
 #validate_RO_2019()
