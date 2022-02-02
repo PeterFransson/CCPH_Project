@@ -73,7 +73,7 @@ function RO_C_F_CCPH_ModelOutput(par::Array{Float64,1},weatherts_F::WeatherTS,
     Nₘ_f_F = Float64[]
     for j = 1:sim_steps+1
        
-        model,kinetic = Initi_model_struct(j,data_C,αf,β₁,β₂,Nₛ,rₘ,a_Jmax,b_Jmax,i,Kₓₗ₀)
+        model,kinetic = Initi_model_struct(j,data_F,αf,β₁,β₂,Nₛ,rₘ,a_Jmax,b_Jmax,i,Kₓₗ₀)
         modeloutput,gₛ_opt,Nₘ_f_opt = OptimCCPH!(j,model,weatherts_F,kinetic)
 
         push!(ModelOutput_F,modeloutput)
@@ -183,7 +183,7 @@ function run_simple_trait_model_C_F_tuning_RO_ts()
     
     q_vec = [0.04,24.0,0.033,0.01,0.04,1.0,-4.0,7.0,16.0,7.0]/25.0
     metropolis_mcmc(x_current,P_current,
-    x::Array{Float64,1}->Post_distri_RO_C_F_CCPH(x::Array{Float64,1},RO_data),q_vec,"RO_C_F_GPP_Only_Few_Para_NoRoot_20220131_2";
+    x::Array{Float64,1}->Post_distri_RO_C_F_CCPH(x::Array{Float64,1},RO_data),q_vec,"RO_C_F_GPP_Only_Few_Para_NoRoot_20220201";
     n_chains=nchains,n_samples=nsamples,burn_in=7000,sample_freq=5)        
 end
 
@@ -191,11 +191,12 @@ function run_C_F_ts_mean()
 
     RO_data = Load_RO_data()  
     
-    
-    samples = load("./output/RO_C_F_GPP_Only_Few_Para_NoRoot_20220131_2.jld","samples_container")    
-    P_samples = load("./output/RO_C_F_GPP_Only_Few_Para_NoRoot_20220131_2.jld","P_samples_container")
-    Draw_trace_plot(samples,"RO_C_F_GPP_Only_Few_Para_NoRoot_20220131_2")
-    Draw_histogram(samples,"RO_C_F_GPP_Only_Few_Para_NoRoot_20220131_2")
+    file_name = "RO_C_F_GPP_Only_Few_Para_NoRoot_20220201"
+
+    samples = load("./output/"*file_name*".jld","samples_container")    
+    P_samples = load("./output/"*file_name*".jld","P_samples_container")
+    Draw_trace_plot(samples,file_name)
+    Draw_histogram(samples,file_name)
 
     par = Find_max_sample(samples,P_samples)  
   
@@ -237,94 +238,5 @@ function run_C_F_ts_mean()
     plot(pl1,pl3,pl2,pl4,layout=(2,2),legends=false)
 end
 
-#=
-function validate_RO_2019()
-    RO_data = Load_RO_data(;weather_file = "Weather_RO_2")  
-    samples = load("output/RO_C_F_GPP_Only_20211119.jld","samples_container")    
-    P_samples = load("output/RO_C_F_GPP_Only_20211119.jld","P_samples_container")
-
-    par = Find_max_sample(samples,P_samples)
-
-    println(par)
-
-    X0,τ,Smax = par[11:13]
-    weatherts_F,GPP_data_F = create_weather_struct_RO(RO_data;stand_type="Fertilized",X0=X0,τ=τ,Smax=Smax,
-    weather_file = "Weather_RO_2")
-    weatherts_C,GPP_data_C = create_weather_struct_RO(RO_data;stand_type="Control",X0=X0,τ=τ,Smax=Smax,
-    weather_file = "Weather_RO_2")
-
-    data_F,data_C = Create_RoData_C_F(GPP_data_F,GPP_data_C)  
-    GPP_model_F,GPP_model_C = Run_RO_C_F_CCPH(par,weatherts_F,weatherts_C,data_F,data_C;sim_steps = 104) 
-
-    ModelOutput_F,ModelOutput_C,k_cost_max_F,k_cost_max_C,gₛ_F,gₛ_C,gₛ_crit_F,gₛ_crit_C,Nₘ_f_F,Nₘ_f_C = 
-    RO_C_F_CCPH_ModelOutput(par,weatherts_F,weatherts_C,data_F,data_C;sim_steps=104)
-    
-    K_cost_F = [Output.K_cost for Output in ModelOutput_F]
-    K_cost_C = [Output.K_cost for Output in ModelOutput_C]
-
-    αr_F = [Output.αr for Output in ModelOutput_F]
-    αr_C = [Output.αr for Output in ModelOutput_C]
-    
-    @show length(GPP_model_F)
-
-    println("Fertilized:")
-    clac_GPP_R²_annual(data_F.GPP,GPP_model_F,weatherts_F.date)
-    println("Control:")
-    clac_GPP_R²_annual(data_C.GPP,GPP_model_C,weatherts_C.date)
-
-    @show calcR²(data_F.GPP,GPP_model_F)
-    @show  cor(data_F.GPP,GPP_model_F)
-    @show calcR²(data_C.GPP,GPP_model_C)
-    @show  cor(data_C.GPP,GPP_model_C)
-
-    plot(weatherts_F.date,data_F.GPP,label="Data")
-    pl1 = plot!(weatherts_F.date,GPP_model_F,label="Model")
-    plot([2.0,9.0],[2.0,9.0],xlabel="Data",ylabel="Model")
-    pl2 = plot!(data_F.GPP,GPP_model_F,seriestype=:scatter)
-    plot(weatherts_C.date,data_C.GPP,label="Data")
-    pl3 = plot!(weatherts_C.date,GPP_model_C,label="Model")
-    plot([2.0,9.0],[2.0,9.0],xlabel="Data",ylabel="Model")
-    pl4 = plot!(data_C.GPP,GPP_model_C,seriestype=:scatter)
-    plot(pl1,pl2,pl3,pl4,layout=(2,2),legends=false)
-
-    plot(weatherts_F.date,K_cost_F)
-    pl1 = plot!(weatherts_F.date,k_cost_max_F) 
-    plot(weatherts_C.date,K_cost_C) 
-    pl2 = plot!(weatherts_C.date,k_cost_max_C)   
-    plot(pl1,pl2,layout=(2,1),legends=false)  
-
-    pl1 = plot(weatherts_F.date,gₛ_F)
-    #pl1 = plot!(weatherts_F.date,gₛ_crit_F) 
-    pl2 = plot(weatherts_C.date,gₛ_C) 
-    #pl2 = plot!(weatherts_C.date,gₛ_crit_C)   
-    plot(pl1,pl2,layout=(2,1),legends=false)  
-
-    pl1 = plot(weatherts_F.date,Nₘ_f_F)
-    pl2 = plot(weatherts_C.date,Nₘ_f_C) 
-    plot(pl1,pl2,layout=(2,1),legends=false) 
-
-    plot(weatherts_F.date,Nₘ_f_F)
-    plot!(weatherts_C.date,Nₘ_f_C,legends=false)
-
-    plot(weatherts_F.date,αr_F)
-    plot!(weatherts_C.date,αr_C)
-
-    plot(weatherts_F.date,weatherts_F.tot_annual_daylight)
-
-    #
-    H_vec = range(19.0,stop=25.0,length=50)
-    αf,β₁,β₂,Nₛ,rₘ,a_Jmax,b_Jmax,i,Kₛᵣ₀,Nₛ_C = par[1:10]
-    model,kinetic = Initi_model_struct(10,data_F,αf,β₁,β₂,Nₛ,rₘ,a_Jmax,b_Jmax,i,Kₛᵣ₀)
-    npp_val = [first(NPP(H,0.3,0.014,250.0,9.2*10^6,model)) for H in H_vec] 
-    Δ_leaf_val = [NPP(H,0.3,0.014,250.0,9.2*10^6,model)[2] for H in H_vec]
-    LAI_val = [last(NPP(H,0.3,0.014,250.0,9.2*10^6,model)) for H in H_vec]
-
-    pl1 = plot(LAI_val,npp_val)   
-    pl2 = plot(LAI_val,Δ_leaf_val)   
-    plot(pl1,pl2,layout=(2,1),legends=false)
-end
-=#
-
 #run_simple_trait_model_C_F_tuning_RO_ts()
 run_C_F_ts_mean()
-#validate_RO_2019()
