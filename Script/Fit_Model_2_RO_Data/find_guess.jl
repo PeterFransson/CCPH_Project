@@ -91,7 +91,7 @@ end
 
 function Check_para_RO_C_F_CCPH(par::Array{Float64,1})
     #Nₛ,rₘ,a_Jmax,Kₓₗ₀,i
-    lo = [0.001,10.0,0.01,0.001,0.1]
+    lo = [0.0001,10.0,0.01,0.0001,0.1]
 
     up = [0.1,40.0,1.0,0.1,6.0] 
 
@@ -124,20 +124,26 @@ function run_simple_trait_model_C_F_tuning_RO_ts()
     #Init Ro data
     RO_data = Load_RO_data()    
 
-    nsamples = 3000
+    nsamples = 4000
     nchains = 6
     
-    par_guess = [0.011976551772617215, 25.42466609569836, 0.5009242298864488,
-    0.010452800544803813,1.0]
+    #par_guess = [0.011976551772617215, 25.42466609569836, 0.5009242298864488,
+    #0.010452800544803813,1.0]
+
+    #par_guess = [0.0010036849304747798, 28.525677512146412,
+    #0.4867276532708108, 0.0011210293750478942, 3.880043910633597]
+
+    par_guess = [0.0027886275510864726, 28.151409147960344,
+    0.33654388499675075, 0.013209818266069784, 2.3474239081010175] 
 
     x_current = [par_guess for i = 1:nchains]
     P_current = [Post_distri_RO_C_F_CCPH(par_guess,RO_data) for i = 1:nchains] 
         
     println(P_current)    
     
-    q_vec = [0.04,24.0,0.033,0.04,1.0]/25.0
+    q_vec = [0.004,24.0,0.33,0.004,10.0]/25.0
     metropolis_mcmc(x_current,P_current,
-    x::Array{Float64,1}->Post_distri_RO_C_F_CCPH(x::Array{Float64,1},RO_data),q_vec,"RO__20220201";
+    x::Array{Float64,1}->Post_distri_RO_C_F_CCPH(x::Array{Float64,1},RO_data),q_vec,"RO__20220202_2";
     n_chains=nchains,n_samples=nsamples,burn_in=5000,sample_freq=5)        
 end
 
@@ -145,7 +151,7 @@ function run_C_F_ts_mean()
 
     RO_data = Load_RO_data()  
 
-    file_name = "RO__20220201"
+    file_name = "RO__20220202_2"
         
     samples = load("./output/"*file_name*".jld","samples_container")    
     P_samples = load("./output/"*file_name*".jld","P_samples_container")
@@ -180,5 +186,22 @@ function run_C_F_ts_mean()
     plot(pl1,pl3,layout=(1,2),legends=false)
 end
 
+function test_adaptive_rwm()
+
+    RO_data = Load_RO_data()
+
+    par_guess = [0.0027886275510864726, 28.151409147960344,
+    0.33654388499675075, 0.013209818266069784, 2.3474239081010175]
+
+    # Run 10k iterations of the Adaptive Metropolis:
+    out = AdaptiveMCMC.adaptive_rwm(par_guess, 
+    x::Array{Float64,1}->Post_distri_RO_C_F_CCPH(x::Array{Float64,1},RO_data),
+    100000; algorithm=:am)
+
+    # Calculate '95% credible intervals':    
+    mapslices(x->"$(mean(x)) ± $(1.96std(x))", out.X, dims=2)
+end
+
 #run_simple_trait_model_C_F_tuning_RO_ts()
-run_C_F_ts_mean()
+#run_C_F_ts_mean()
+test_adaptive_rwm()

@@ -1,4 +1,5 @@
 [deps]
+AdaptiveMCMC = "717c3277-546c-407d-8270-09a39a0919a0"
 CCPH = "ca5d910d-a1e0-446f-8378-e1f3d5b528ad"
 CSV = "336ed68f-0bac-5ca0-87d4-7b16caf5d00b"
 Dates = "ade2ca70-3891-5945-98fb-dc099432e06a"

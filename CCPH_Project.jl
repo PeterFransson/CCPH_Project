@@ -1,7 +1,7 @@
 using Pkg
 Pkg.activate(".")
 using Revise, CCPH, Statistics, Distributions, Plots, JLD
-import Dates, CSV, Interpolations
+import Dates, CSV, Interpolations, AdaptiveMCMC
 
 include("./mcmc/metropolis_log_P.jl")
 include("./mcmc/analysis.jl")
