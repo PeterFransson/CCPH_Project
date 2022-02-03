@@ -188,18 +188,53 @@ end
 
 function test_adaptive_rwm()
 
+    file_name = "adaptive_rwm_20220202"
+    n_chains = 3
+    n_iter = 20000
+
     RO_data = Load_RO_data()
 
     par_guess = [0.0027886275510864726, 28.151409147960344,
-    0.33654388499675075, 0.013209818266069784, 2.3474239081010175]
+    0.33654388499675075, 0.013209818266069784, 2.3474239081010175]  
+    
+    out_mat_tot = Array{Matrix{Float64},1}(undef,n_chains)
 
-    # Run 10k iterations of the Adaptive Metropolis:
-    out = AdaptiveMCMC.adaptive_rwm(par_guess, 
-    x::Array{Float64,1}->Post_distri_RO_C_F_CCPH(x::Array{Float64,1},RO_data),
-    100000; algorithm=:am)
+    Threads.@threads for j = 1:n_chains
+        # Run 10k iterations of the Adaptive Metropolis:
+        out = AdaptiveMCMC.adaptive_rwm(par_guess, 
+        x::Array{Float64,1}->Post_distri_RO_C_F_CCPH(x::Array{Float64,1},RO_data),
+        n_iter; algorithm=:am) 
 
-    # Calculate '95% credible intervals':    
-    mapslices(x->"$(mean(x)) ± $(1.96std(x))", out.X, dims=2)
+        out_mat_tot[j] = transpose(out.X)
+    end   
+
+    try
+        save("./output/"*file_name*".jld","samples",out_mat_tot)
+
+        @show typeof(out_mat_tot)
+        @show size(out_mat_tot)        
+
+        n_features = size(out_mat_tot[1])[2]
+
+        histogram(out_mat_tot[1],layout=5,legend=false)
+        savefig("./plots/"*file_name*".svg") 
+
+        plot(;layout=n_features,legends=false)        
+        for i = 1:n_features
+            for j=1:n_chains
+                plot!(out_mat_tot[j][:,i],subplot=i)           
+            end
+        end
+        savefig("./plots/"*file_name*"_trace_plot.svg") 
+
+        # Calculate '95% credible intervals':    
+        para_stat = mapslices(x->"$(mean(x)) ± $(1.96std(x))", out_mat_tot[1], dims=1)
+        for line in para_stat
+            println(line)
+        end
+    catch err
+        println("Error: ",err)
+    end    
 end
 
 #run_simple_trait_model_C_F_tuning_RO_ts()
