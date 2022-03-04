@@ -91,7 +91,7 @@ end
 
 function Check_para_RO_C_F_CCPH(par::Array{Float64,1})
     #Nₛ,rₘ,a_Jmax,Kₓₗ₀,i
-    lo = [0.0001,10.0,0.01,0.0001,0.1]
+    lo = [0.00001,10.0,0.01,0.0001,0.1]
 
     up = [0.1,40.0,1.0,0.1,6.0] 
 
@@ -188,9 +188,9 @@ end
 
 function test_adaptive_rwm()
 
-    file_name = "adaptive_rwm_20220202"
+    file_name = "adaptive_rwm_20220203"
     n_chains = 3
-    n_iter = 20000
+    n_iter = 30000
 
     RO_data = Load_RO_data()
 

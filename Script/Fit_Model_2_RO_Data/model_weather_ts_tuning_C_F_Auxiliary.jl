@@ -12,6 +12,22 @@ function Calctranpiration(VPD_z::T,Sₑ::T;
     return E_c
 end
 
+function Est_E_C(daylight::T;
+    env::CCPH.EnvironmentStruct=CCPH.EnvironmentStruct(),
+    E_cm_ref::T=1.812,s_VPD_z::T=3.121,s_Sₑ::T=18.342) where {T<:Float64}
+    #Estimating canopy transpiration E_C (mm/d) based on weather data,
+    #using the Tor-Ngern et al. 2017 model for estimating canopy transpiration 
+    #---Input---
+    # daylight lenght of day (s)
+    VPD = env.VPD
+    θₛ = env.θₛ       
+    VPD_z = VPD.*daylight/(24*3600)    
+    Sₑ = CCPH.CalcSₑ.(θₛ)
+    E_C = Calctranpiration.(VPD_z,Sₑ;E_cm_ref=E_cm_ref,s_VPD_z=s_VPD_z,s_Sₑ=s_Sₑ) #mm/day
+
+    return E_C
+end
+
 function Est_gₛ(LAI::T,daylight::T;cons::CCPH.Constants=CCPH.Constants(),
     env::CCPH.EnvironmentStruct=CCPH.EnvironmentStruct(),
     E_cm_ref::T=1.812,s_VPD_z::T=3.121,s_Sₑ::T=18.342) where {T<:Float64} 
@@ -51,6 +67,7 @@ mutable struct RoData{T<:Float64}
     N::Array{T,1}
     Hc::T
     gₛ::Array{T,1}
+    E_C::Array{T,1}
 end
 
 function Create_RoData_C_F(GPP_data_F::Array{T,1},GPP_data_C::Array{T,1},
@@ -73,6 +90,9 @@ function Create_RoData_C_F(GPP_data_F::Array{T,1},GPP_data_C::Array{T,1},
 
     gₛ_data_F = Float64[]
     gₛ_data_C = Float64[]
+    E_C_data_F = Float64[]
+    E_C_data_C = Float64[]
+
     for i = 1:length(weatherts_F.date)
         env_F = EnvironmentStruct(weatherts_F,i)
         env_C = EnvironmentStruct(weatherts_C,i)
@@ -82,10 +102,13 @@ function Create_RoData_C_F(GPP_data_F::Array{T,1},GPP_data_C::Array{T,1},
 
         push!(gₛ_data_F,Est_gₛ(LAI_F[Find_data_ind(i)],daylight_F;env=env_F))
         push!(gₛ_data_C,Est_gₛ(LAI_C[Find_data_ind(i)],daylight_C;env=env_C))
+
+        push!(E_C_data_F,Est_E_C(daylight_F;env=env_F))
+        push!(E_C_data_C,Est_E_C(daylight_C;env=env_C))
     end
 
-    data_F = RoData(H_data_F,B_data_F,GPP_data_F,Wf_data_F,N_data_F,Hc_F,gₛ_data_F)
-    data_C = RoData(H_data_C,B_data_C,GPP_data_C,Wf_data_C,N_data_C,Hc_C,gₛ_data_C)
+    data_F = RoData(H_data_F,B_data_F,GPP_data_F,Wf_data_F,N_data_F,Hc_F,gₛ_data_F,E_C_data_F)
+    data_C = RoData(H_data_C,B_data_C,GPP_data_C,Wf_data_C,N_data_C,Hc_C,gₛ_data_C,E_C_data_C)
 
     return data_F,data_C
 end
@@ -154,6 +177,19 @@ function OptimCCPH!(i::Integer,model::CCPH.CCPHStruct,
     return modeloutput,gₛ_opt,Nₘ_f_opt
 end
 
+
+function CalcE_C(gₛ::Float64,growthlength::Float64,model::CCPH.CCPHStruct)
+    VPD = model.env.VPD
+    P = model.env.P 
+    LAI = model.treesize.N*model.treesize.Wf/model.treepar.LMA
+    daylight = growthlength/7 
+
+    E_c = model.cons.r*gₛ*VPD*LAI/P #mol m⁻² s⁻¹
+    E_c *= model.cons.M_H2O*daylight*10^3/model.cons.ρ_H2O #mm day⁻¹
+
+    return E_c 
+end
+
 #Calc model GPP
 function CalcGPP(ccphts::CCPHTS,weatherts::WeatherTS)
     GPP = ccphts.N.*ccphts.P.*weatherts.daylight./weatherts.tot_annual_daylight*1000/7 #g C day⁻¹ m⁻² ground area
@@ -171,7 +207,20 @@ function CalcGPP!(i::Integer,model::CCPH.CCPHStruct,
     modeloutput,gₛ_opt,Nₘ_f_opt = OptimCCPH(growthlength,model)
     GPP = CalcGPP(step_length,model,modeloutput)
     
+    
     return GPP, gₛ_opt
+end
+
+function CalcModelOutput!(i::Integer,model::CCPH.CCPHStruct,
+    weatherts::CCPH.WeatherTS,photo_kinetic::CCPH.PhotoKineticRates)
+    growthlength,step_length = CCPH.Init_weather_par!(i,model,weatherts,photo_kinetic)    
+
+    modeloutput,gₛ_opt,Nₘ_f_opt = OptimCCPH(growthlength,model)
+    GPP = CalcGPP(step_length,model,modeloutput)
+
+    E_C = CalcE_C(gₛ_opt,growthlength*step_length,model)
+    
+    return GPP, E_C, modeloutput, gₛ_opt, Nₘ_f_opt
 end
 
 function clac_GPP_R²_annual(GPP::Array{Float64,1},GPP_model::Array{Float64,1},dates::Array{Dates.DateTime,1})

@@ -126,7 +126,7 @@ function Calc_error_RO_C_F_CCPH(
         error_C += 1-calcR²(data_C.gₛ[ind_start[i]:ind_end[i]],gₛ_model_C[ind_start[i]:ind_end[i]])
     end
      
-    return  error_F+error_C
+    return  error_C#error_F+error_C
 end
 
 function Check_para_RO_C_F_CCPH(par::Array{Float64,1})
@@ -240,9 +240,9 @@ end
 
 function test_adaptive_rwm()
 
-    file_name = "adaptive_rwm_RO_C_F_GPP_Only_20220202"
+    file_name = "adaptive_rwm_RO_C_GPP_Only_20220214"
     n_chains = 4
-    n_iter = 30000   
+    n_iter = 40000   
 
     RO_data = Load_RO_data()
 
@@ -252,7 +252,7 @@ function test_adaptive_rwm()
     out_mat_tot = Array{Matrix{Float64},1}(undef,n_chains)
 
     Threads.@threads for j = 1:n_chains
-        # Run 10k iterations of the Adaptive Metropolis:
+        # Run n_iter iterations of the Adaptive Metropolis method:
         out = AdaptiveMCMC.adaptive_rwm(par_guess, 
         x::Array{Float64,1}->Post_distri_RO_C_F_CCPH(x::Array{Float64,1},RO_data),
         n_iter; algorithm=:am) 
@@ -289,6 +289,83 @@ function test_adaptive_rwm()
     end    
 end
 
+function find_max_adaptive_rwm()
+    
+    n_chains = 12
+    file_name = "adaptive_rwm_RO_C_F_GPP_Only_20220203"
+    out_mat_tot = load("./output/"*file_name*".jld","samples")
+    out_mat = out_mat_tot[1]
+    n_features = size(out_mat)[2]
+    n_samples = size(out_mat)[1]
+
+    RO_data = Load_RO_data()
+    
+    #=
+    log_p_vec = Array{Float64,1}(undef,n_samples)
+
+    Threads.@threads for j = 1:n_samples
+        println("Done: $(j)/$(n_samples)")        
+        para_val = out_mat[j,:]
+        log_p_vec[j] = Post_distri_RO_C_F_CCPH(para_val,RO_data)
+    end
+
+    save("./output/"*file_name*"_log_p.jld","log_p",log_p_vec)
+    =#
+    
+    log_p_vec = load("./output/"*file_name*"_log_p.jld","log_p")
+
+    @show min_ind = argmax(log_p_vec) 
+    
+    @show size(out_mat)
+    @show typeof(out_mat)
+
+    @show par = reshape(mean(out_mat, dims=1),n_features)
+    @show par = out_mat[min_ind,:]
+
+    X0,τ,Smax,τ_C = par[7:10]
+    weatherts_F,GPP_data_F = create_weather_struct_RO(RO_data;stand_type="Fertilized",X0=X0,τ=τ,Smax=Smax)
+    weatherts_C,GPP_data_C = create_weather_struct_RO(RO_data;stand_type="Control",X0=X0,τ=τ_C,Smax=Smax)
+    
+    data_F,data_C = Create_RoData_C_F(GPP_data_F,GPP_data_C,weatherts_F,weatherts_C)    
+
+    GPP_model_F,GPP_model_C,gₛ_model_F,gₛ_model_C = Run_RO_C_F_CCPH(par,weatherts_F,weatherts_C,data_F,data_C) 
+
+    @show GPP_R²_F =  calcR²(data_F.GPP,GPP_model_F)
+    @show GPP_cor_F = cor(data_F.GPP,GPP_model_F)
+    @show gₛ_R²_F =  calcR²(data_F.gₛ,gₛ_model_F)
+    @show gₛ_cor_F = cor(data_F.gₛ,gₛ_model_F)
+
+    @show GPP_R²_C =  calcR²(data_C.GPP,GPP_model_C)
+    @show GPP_cor_C = cor(data_C.GPP,GPP_model_C)
+    @show gₛ_R²_C =  calcR²(data_C.gₛ,gₛ_model_C)
+    @show gₛ_cor_C = cor(data_C.gₛ,gₛ_model_C)
+
+    println("Fertilized")
+    clac_GPP_R²_annual(data_C.GPP,GPP_model_F,weatherts_F.date)
+    println("Control")  
+    clac_GPP_R²_annual(data_C.GPP,GPP_model_C,weatherts_C.date)  
+
+    plot(weatherts_F.date,data_F.GPP,label="Data",ylabel="GPP")
+    pl1 = plot!(weatherts_F.date,GPP_model_F,label="Model")
+    plot(weatherts_C.date,data_C.GPP,label="Data",ylabel="GPP")
+    pl2 = plot!(weatherts_C.date,GPP_model_C,label="Model")
+
+    plot(weatherts_F.date,data_F.gₛ,label="Data",ylabel="gₛ")
+    pl3 = plot!(weatherts_F.date,gₛ_model_F,label="Model")
+    plot(weatherts_C.date,data_C.gₛ,label="Data",ylabel="gₛ")
+    pl4 = plot!(weatherts_C.date,gₛ_model_C,label="Model")
+
+    plot(pl1,pl3,pl2,pl4,layout=(2,2),legends=false)
+    savefig("./plots/"*file_name*"_result.svg")
+
+    # Calculate '95% credible intervals':    
+    para_stat = mapslices(x->"$(mean(x)) ± $(1.96std(x))", out_mat, dims=1)
+    for line in para_stat
+        println(line)
+    end
+end
+
 #run_simple_trait_model_C_F_tuning_RO_ts()
 #run_C_F_ts_mean()
-test_adaptive_rwm()
+#test_adaptive_rwm()
+find_max_adaptive_rwm()
