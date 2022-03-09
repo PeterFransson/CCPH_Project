@@ -70,6 +70,56 @@ mutable struct RoData{T<:Float64}
     E_C::Array{T,1}
 end
 
+function Create_gₛ_E_C_Data(weatherts::CCPH.WeatherTS,LAI::Array{T,1}) where {T<:Float64}
+    gₛ_data = Float64[]    
+    E_C_data = Float64[]
+   
+
+    for i = 1:length(weatherts.date)
+        env = EnvironmentStruct(weatherts,i)
+        
+        daylight = weatherts.daylight[i]/7
+        
+        push!(gₛ_data,Est_gₛ(LAI[Find_data_ind(i)],daylight;env=env))        
+        push!(E_C_data,Est_E_C(daylight;env=env))        
+    end
+    return gₛ_data,E_C_data
+end
+
+
+function Create_RoData_F(GPP_data_F::Array{T,1},weatherts_F::CCPH.WeatherTS;
+    treepar::TreePar=TreePar()) where {T<:Float64}
+    H_data_F = [19.07,19.34,19.64,19.87] 
+    B_data_F = [0.0452,0.0467,0.0479,0.0487]
+    Wf_data_F = [8.33,8.47,8.49,8.48]
+    N_data_F = [850.0000,846.6667,846.6667,846.6667]/10000
+    Hc_F = 10.89
+    LAI_F = Wf_data_F.*N_data_F/treepar.LMA
+
+    gₛ_data_F,E_C_data_F = Create_gₛ_E_C_Data(weatherts_F::CCPH.WeatherTS,LAI_F::Array{T,1})
+
+    data_F = RoData(H_data_F,B_data_F,GPP_data_F,Wf_data_F,N_data_F,Hc_F,gₛ_data_F,E_C_data_F)
+
+    return data_F
+end
+
+function Create_RoData_C(GPP_data_C::Array{T,1},weatherts_C::CCPH.WeatherTS;
+    treepar::TreePar=TreePar()) where {T<:Float64}
+
+    H_data_C = [20.86,21.01,21.19,21.36] 
+    B_data_C = [0.0348,0.0356,0.0362,0.0368]
+    Wf_data_C = [5.025,5.110,5.141,5.165]
+    N_data_C = [1010.0000,1010.0000,1006.6667,1006.6667]/10000
+    Hc_C = 10.74
+    LAI_C = Wf_data_C.*N_data_C/treepar.LMA
+    
+    gₛ_data_C,E_C_data_C = Create_gₛ_E_C_Data(weatherts_C::CCPH.WeatherTS,LAI_C::Array{T,1})
+
+    data_C = RoData(H_data_C,B_data_C,GPP_data_C,Wf_data_C,N_data_C,Hc_C,gₛ_data_C,E_C_data_C)
+
+    return data_C
+end
+
 function Create_RoData_C_F(GPP_data_F::Array{T,1},GPP_data_C::Array{T,1},
     weatherts_F::CCPH.WeatherTS,weatherts_C::CCPH.WeatherTS;treepar::TreePar=TreePar()) where {T<:Float64} 
         
@@ -77,9 +127,8 @@ function Create_RoData_C_F(GPP_data_F::Array{T,1},GPP_data_C::Array{T,1},
     B_data_F = [0.0452,0.0467,0.0479,0.0487]
     Wf_data_F = [8.33,8.47,8.49,8.48]
     N_data_F = [850.0000,846.6667,846.6667,846.6667]/10000
-    LAI_F = Wf_data_F.*N_data_F/treepar.LMA
-
     Hc_F = 10.89
+    LAI_F = Wf_data_F.*N_data_F/treepar.LMA    
 
     H_data_C = [20.86,21.01,21.19,21.36] 
     B_data_C = [0.0348,0.0356,0.0362,0.0368]

@@ -39,7 +39,7 @@ function Run_RO_C_F_CCPH(par::Array{Float64,1},weatherts_F::WeatherTS,
     #Fertilized stand
     GPP_model_F = zeros(sim_steps+1)
     EC_model_F = zeros(sim_steps+1)  
-    Nₘ_f_model_F = zeros(sim_steps+1) 
+    Nₘ_f_model_F = zeros(sim_steps+1)
     for j = 1:sim_steps+1           
        
         model,kinetic = Initi_model_struct(j,data_F,αf,β₁,β₂,Nₛ,rₘ,a_Jmax,b_Jmax,i,Kₓₗ₀,r_α)
@@ -50,7 +50,7 @@ function Run_RO_C_F_CCPH(par::Array{Float64,1},weatherts_F::WeatherTS,
     #Control stand
     GPP_model_C = zeros(sim_steps+1)
     EC_model_C = zeros(sim_steps+1)
-    Nₘ_f_model_C = zeros(sim_steps+1) 
+    Nₘ_f_model_C = zeros(sim_steps+1)
     for j = 1:sim_steps+1        
         
         model,kinetic = Initi_model_struct(j,data_C,αf,β₁,β₂,Nₛ_C,rₘ,a_Jmax,b_Jmax,i,Kₓₗ₀,r_α)
@@ -58,7 +58,7 @@ function Run_RO_C_F_CCPH(par::Array{Float64,1},weatherts_F::WeatherTS,
         GPP_model_C[j],EC_model_C[j], modeloutput, gₛ_opt, Nₘ_f_model_C[j] = CalcModelOutput!(j,model,weatherts_C,kinetic)
     end  
 
-    return GPP_model_F,GPP_model_C,EC_model_F,EC_model_C,Nₘ_f_model_F,Nₘ_f_model_C
+    return GPP_model_F,GPP_model_C,EC_model_F,EC_model_C,Nₘ_f_model_F,Nₘ_f_model_C 
 end
 
 function Get_Data_RO_C_F_CCPH(par::Array{Float64,1},weatherts_F::WeatherTS,
@@ -102,17 +102,19 @@ function calc_logP_term(ydata::T,ymodel::T,a::T,b::T) where {T<:Float64}
 end
 
 function Calc_logP(
-    GPP_model_F::Array{T,1},Ec_model_F::Array{T,1},data_F::RoData,
-    GPP_model_C::Array{T,1},Ec_model_C::Array{T,1},data_C::RoData,
-    a_GPP::T,b_GPP::T,a_Ec::T,b_Ec::T) where {T<:Float64}     
+    GPP_model_F::Array{T,1},Ec_model_F::Array{T,1},Nₘ_f_model_F::Array{T,1},data_F::RoData,
+    GPP_model_C::Array{T,1},Ec_model_C::Array{T,1},Nₘ_f_model_C::Array{T,1},data_C::RoData,
+    a_GPP::T,b_GPP::T,a_Ec::T,b_Ec::T,μ_F::T,b_F::T,μ_C::T,b_C::T) where {T<:Float64}     
 
     logP = 0.0
     for i = 1:length(data_F.GPP)
         logP += calc_logP_term(data_F.GPP[i],GPP_model_F[i],a_GPP,b_GPP)
         logP += calc_logP_term(data_C.GPP[i],GPP_model_C[i],a_GPP,b_GPP)
+        logP += abs(Nₘ_f_model_F[i]-μ_F)/b_F
 
         logP += calc_logP_term(data_F.E_C[i],Ec_model_F[i],a_Ec,b_Ec)
-        logP += calc_logP_term(data_C.E_C[i],Ec_model_C[i],a_Ec,b_Ec)        
+        logP += calc_logP_term(data_C.E_C[i],Ec_model_C[i],a_Ec,b_Ec) 
+        logP += abs(Nₘ_f_model_C[i]-μ_C)/b_C       
     end    
      
     return  -logP
@@ -131,9 +133,9 @@ function Post_distri_RO_C_F_CCPH(par::Array{Float64,1},RO_data::RO_raw_data)
         a_GPP,b_GPP,a_Ec,b_Ec = par[11:14]
 
         logP = Calc_logP(
-        GPP_model_F,EC_model_F,data_F,
-        GPP_model_C,EC_model_C,data_C,
-        a_GPP,b_GPP,a_Ec,b_Ec)
+        GPP_model_F,EC_model_F,Nₘ_f_model_F,data_F,
+        GPP_model_C,EC_model_C,Nₘ_f_model_C,data_C,
+        a_GPP,b_GPP,a_Ec,b_Ec,0.018,0.0018,0.0113,0.00063)
         
         return post = logP
     catch err
@@ -143,7 +145,7 @@ function Post_distri_RO_C_F_CCPH(par::Array{Float64,1},RO_data::RO_raw_data)
 end
 
 function run_opt()    
-    file_name = "opt_RO_F_C_20220304"
+    file_name = "opt_RO_F_C_20220307"
 
     RO_data = Load_RO_data()
     
@@ -153,14 +155,14 @@ function run_opt()
     (0.0001,5.0),(0.0001,3.0),(0.0001,5.0),(0.0001,3.0)]
 
     res = BlackBoxOptim.bboptimize(x::Array{Float64,1}->-Post_distri_RO_C_F_CCPH(x::Array{Float64,1},RO_data)
-    ; SearchRange = ranges,PopulationSize = 200,MaxSteps=40000)
+    ; SearchRange = ranges,PopulationSize = 100,MaxSteps=30000)
 
     @show xopt = BlackBoxOptim.best_candidate(res)
 
     save("./output/"*file_name*".jld","xopt",xopt)
 end
 function run_opt_par()
-    file_name = "opt_RO_F_C_20220304"
+    file_name = "opt_RO_F_C_20220307"
 
     par = load("./output/"*file_name*".jld","xopt")    
 
