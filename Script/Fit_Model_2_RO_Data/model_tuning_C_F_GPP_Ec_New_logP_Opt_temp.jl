@@ -1,11 +1,11 @@
 function Initi_model_struct(H::T,Hc::T,N::T,Wf::T,B::T,αf::T,β₁::T,β₂::T,
-    Nₛ::T,rₘ::T,a_Jmax::T,b_Jmax::T,i::T,Kₓₗ₀::T,r_α::T) where {T<:Float64}
+    Nₛ::T,rₘ::T,a_Jmax::T,b_Jmax::T,i::T,Kₓₗ₀::T,r_α::T,Nₘ_f::T) where {T<:Float64}
     cons = Constants()
     env = EnvironmentStruct() 
     kinetic = PhotoKineticRates()
     photo = PhotoPar(kinetic,env.Tₐ)    
     hydPar = HydraulicsPar(;Kₓₗ₀=Kₓₗ₀,i=i)
-    treepar = TreePar(;αf=αf,β₁=β₁,β₂=β₂,rₘ=rₘ,Nₛ=Nₛ,a_Jmax=a_Jmax,b_Jmax=b_Jmax,r_α=r_α)   
+    treepar = TreePar(;αf=αf,β₁=β₁,β₂=β₂,rₘ=rₘ,Nₛ=Nₛ,a_Jmax=a_Jmax,b_Jmax=b_Jmax,r_α=r_α,Nₘ_f=Nₘ_f)   
        
     Hs = H-Hc   
     As = Wf/treepar.αf
@@ -18,14 +18,14 @@ function Initi_model_struct(H::T,Hc::T,N::T,Wf::T,B::T,αf::T,β₁::T,β₂::T,
 end
 
 function Initi_model_struct(j::Integer,data::RoData,
-    αf::T,β₁::T,β₂::T,Nₛ::T,rₘ::T,a_Jmax::T,b_Jmax::T,i::T,Kₓₗ₀::T,r_α::T) where {T<:Float64}
+    αf::T,β₁::T,β₂::T,Nₛ::T,rₘ::T,a_Jmax::T,b_Jmax::T,i::T,Kₓₗ₀::T,r_α::T,Nₘ_f::T) where {T<:Float64}
     data_ind = Find_data_ind(j)
     H = data.H[data_ind]
     N = data.N[data_ind]
     Wf = data.Wf[data_ind]
     B = data.B[data_ind]
     Hc = data.Hc
-    model,kinetic = Initi_model_struct(H,Hc,N,Wf,B,αf,β₁,β₂,Nₛ,rₘ,a_Jmax,b_Jmax,i,Kₓₗ₀,r_α)   
+    model,kinetic = Initi_model_struct(H,Hc,N,Wf,B,αf,β₁,β₂,Nₛ,rₘ,a_Jmax,b_Jmax,i,Kₓₗ₀,r_α,Nₘ_f)   
 
     return model,kinetic
 end
@@ -42,7 +42,7 @@ function Run_RO_C_F_CCPH(par::Array{Float64,1},weatherts_F::WeatherTS,
     Nₘ_f_model_F = zeros(sim_steps+1) 
     for j = 1:sim_steps+1           
        
-        model,kinetic = Initi_model_struct(j,data_F,αf,β₁,β₂,Nₛ,rₘ,a_Jmax,b_Jmax,i,Kₓₗ₀,r_α)
+        model,kinetic = Initi_model_struct(j,data_F,αf,β₁,β₂,Nₛ,rₘ,a_Jmax,b_Jmax,i,Kₓₗ₀,r_α,0.018)
         
         GPP_model_F[j],EC_model_F[j], modeloutput, gₛ_opt, Nₘ_f_model_F[j] = CalcModelOutput!(j,model,weatherts_F,kinetic)
     end  
@@ -53,7 +53,7 @@ function Run_RO_C_F_CCPH(par::Array{Float64,1},weatherts_F::WeatherTS,
     Nₘ_f_model_C = zeros(sim_steps+1) 
     for j = 1:sim_steps+1        
         
-        model,kinetic = Initi_model_struct(j,data_C,αf,β₁,β₂,Nₛ_C,rₘ,a_Jmax,b_Jmax,i,Kₓₗ₀,r_α)
+        model,kinetic = Initi_model_struct(j,data_C,αf,β₁,β₂,Nₛ_C,rₘ,a_Jmax,b_Jmax,i,Kₓₗ₀,r_α,0.0113)
         
         GPP_model_C[j],EC_model_C[j], modeloutput, gₛ_opt, Nₘ_f_model_C[j] = CalcModelOutput!(j,model,weatherts_C,kinetic)
     end  
@@ -74,7 +74,7 @@ function Get_Data_RO_C_F_CCPH(par::Array{Float64,1},weatherts_F::WeatherTS,
     Nₘ_f_model_F = zeros(sim_steps+1)
     for j = 1:sim_steps+1           
        
-        model,kinetic = Initi_model_struct(j,data_F,αf,β₁,β₂,Nₛ,rₘ,a_Jmax,b_Jmax,i,Kₓₗ₀,r_α)
+        model,kinetic = Initi_model_struct(j,data_F,αf,β₁,β₂,Nₛ,rₘ,a_Jmax,b_Jmax,i,Kₓₗ₀,r_α,0.018)
         
         GPP_model_F[j],EC_model_F[j], modeloutput, gₛ_model_F[j], Nₘ_f_model_F[j] = CalcModelOutput!(j,model,weatherts_F,kinetic)
     end  
@@ -86,7 +86,7 @@ function Get_Data_RO_C_F_CCPH(par::Array{Float64,1},weatherts_F::WeatherTS,
     Nₘ_f_model_C = zeros(sim_steps+1)
     for j = 1:sim_steps+1        
         
-        model,kinetic = Initi_model_struct(j,data_C,αf,β₁,β₂,Nₛ_C,rₘ,a_Jmax,b_Jmax,i,Kₓₗ₀,r_α)
+        model,kinetic = Initi_model_struct(j,data_C,αf,β₁,β₂,Nₛ_C,rₘ,a_Jmax,b_Jmax,i,Kₓₗ₀,r_α,0.0113)
         
         GPP_model_C[j],EC_model_C[j], modeloutput, gₛ_model_C[j], Nₘ_f_model_C[j] = CalcModelOutput!(j,model,weatherts_C,kinetic)
     end  
@@ -143,7 +143,7 @@ function Post_distri_RO_C_F_CCPH(par::Array{Float64,1},RO_data::RO_raw_data)
 end
 
 function run_opt()    
-    file_name = "opt_RO_F_C_20220304"
+    file_name = "opt_RO_F_C_20220309"
 
     RO_data = Load_RO_data()
     
@@ -153,14 +153,14 @@ function run_opt()
     (0.0001,5.0),(0.0001,3.0),(0.0001,5.0),(0.0001,3.0)]
 
     res = BlackBoxOptim.bboptimize(x::Array{Float64,1}->-Post_distri_RO_C_F_CCPH(x::Array{Float64,1},RO_data)
-    ; SearchRange = ranges,PopulationSize = 200,MaxSteps=40000)
+    ; SearchRange = ranges,PopulationSize = 50,MaxSteps=10000)
 
     @show xopt = BlackBoxOptim.best_candidate(res)
 
     save("./output/"*file_name*".jld","xopt",xopt)
 end
 function run_opt_par()
-    file_name = "opt_RO_F_C_20220304"
+    file_name = "opt_RO_F_C_20220309"
 
     par = load("./output/"*file_name*".jld","xopt")    
 
@@ -233,12 +233,12 @@ function run_opt_par()
     plot(pl1,pl2,layout=(1,2),legends=false)
     savefig("./plots/"*file_name*"_result_gs.svg")
 
-    pl1 = plot(weatherts_F.date,Nₘ_f_model_F,label="Model",ylabel="Nₘ_f (%)")    
-    pl2 = plot(weatherts_C.date,Nₘ_f_model_C,label="Model",ylabel="Nₘ_f (%)")
+    pl1 = plot(weatherts_F.date,Nₘ_f_model_F*100,label="Model",ylabel="Nₘ_f (%)")    
+    pl2 = plot(weatherts_C.date,Nₘ_f_model_C*100,label="Model",ylabel="Nₘ_f (%)")
     
     plot(pl1,pl2,layout=(1,2),legends=false)
     savefig("./plots/"*file_name*"_result_Nm_f.svg")
 end
 
-run_opt()
+#run_opt()
 run_opt_par()
