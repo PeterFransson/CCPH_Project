@@ -315,7 +315,7 @@ function CreateParaDict(ParaDictInit::Dict{Symbol,Float64})
 end
 
 function CreateCalibParaDict(CaliParaSym::Array{Symbol,1},CaliParaVal::Array{Float64,1})
-    length(CaliParaVal)==length(CaliParaVal)||error("CreateCalibParaDict: CaliParaSym and CaliParaVal must be of same length")
+    length(CaliParaSym)==length(CaliParaVal)||error("CreateCalibParaDict: CaliParaSym and CaliParaVal must be of same length")
     CalibParaDict = Dict(zip(CaliParaSym,CaliParaVal))
     return CalibParaDict
 end
@@ -423,4 +423,101 @@ function calc_logP_term(ydata::T,ymodel::T,a::T,b::T) where {T<:Float64}
     σ = a+b*ymodel
     σ>0.0||error("Negative variance")
     return e/σ+log(σ)
+end
+
+function Calc_logP_GPP_Ec(model::ModelResult,data::RoData,ParaDict::Dict{Symbol,Float64}) 
+    
+    a_GPP,b_GPP,a_Ec,b_Ec = ParaDict[:a_GPP],ParaDict[:b_GPP],ParaDict[:a_Ec],ParaDict[:b_Ec] 
+
+    logP = 0.0
+    for i = 1:length(data.GPP)
+        logP += calc_logP_term(data.GPP[i],model.GPP[i],a_GPP,b_GPP)
+        logP += calc_logP_term(data.Ec[i],model.Ec[i],a_Ec,b_Ec)                      
+    end    
+     
+    return -logP
+end
+
+function Calc_logP_GPP_Ec_Nm_f(model::ModelResult,data::RoData,ParaDict::Dict{Symbol,Float64}) 
+    
+    a_GPP,b_GPP,a_Ec,b_Ec = ParaDict[:a_GPP],ParaDict[:b_GPP],ParaDict[:a_Ec],ParaDict[:b_Ec] 
+    μ_Nₘ_f,b_Nₘ_f = ParaDict[:μ_Nₘ_f],ParaDict[:b_Nₘ_f]
+
+    logP = 0.0
+    for i = 1:length(data.GPP)
+        logP += calc_logP_term(data.GPP[i],model.GPP[i],a_GPP,b_GPP)
+        logP += calc_logP_term(data.Ec[i],model.Ec[i],a_Ec,b_Ec)    
+        logP += abs(model.Nₘ_f[i]-μ_Nₘ_f)/b_Nₘ_f          
+    end    
+     
+    return -logP
+end
+
+struct CalibPara
+    sym::Symbol
+    rang::Tuple{Float64,Float64}
+    sep::Bool   
+end
+CalibPara(Sym::Symbol,rang::Tuple{Float64,Float64};sep::Bool=false) = CalibPara(Sym,rang,sep)
+
+function CalibParaVec(kwargs...)
+    calibparavec = Array{CalibPara,1}()
+    for x in kwargs
+        if typeof(x) == Tuple{Symbol,Float64,Float64,Bool}
+            push!(calibparavec,CalibPara(x[1],(x[2],x[3]);sep=x[4]))
+        elseif typeof(x) == Tuple{Symbol,Float64,Float64}
+            push!(calibparavec,CalibPara(x[1],(x[2],x[3])))
+        else
+            error("CalibParaVec: worng input type; Either Tuple{Symbol,Float64,Float64,Bool} or
+            Tuple{Symbol,Float64,Float64}")
+        end
+        
+    end 
+    return calibparavec   
+end
+
+function CreateOptVar(calibparavec::Array{CalibPara,1})
+    ranges = Array{Tuple{Float64,Float64},1}()
+    para2ind = Dict{Symbol,Any}()
+    ind = 1
+    for para in calibparavec
+        if para.sep             
+            push!(ranges,para.rang,para.rang)
+            merge!(para2ind,Dict(para.sym=>(ind,ind+1)))
+            ind += 2
+        else
+            push!(ranges,para.rang)
+            merge!(para2ind,Dict(para.sym=>ind))
+            ind += 1
+        end
+    end
+    return ranges,para2ind
+end
+
+function CreateParaDict(para2ind::Dict{Symbol,Any},
+    CaliParaVal::Array{Float64,1};ParaDictInit_F=nothing,ParaDictInit_C=nothing)
+    if typeof(ParaDictInit_F) == Dict{Symbol,Float64}
+        ParaDict_F = CreateParaDict(ParaDictInit_F)
+    else
+        ParaDict_F = CreateParaDict()
+    end
+    if typeof(ParaDictInit_C) == Dict{Symbol,Float64}
+        ParaDict_C = CreateParaDict(ParaDictInit_C)
+    else
+        ParaDict_C = CreateParaDict()
+    end
+    
+    for (key,ind) in para2ind
+        if isa(ind,Integer)
+            ParaDict_F[key] = CaliParaVal[ind]
+            ParaDict_C[key] = CaliParaVal[ind] 
+        elseif isa(ind,Tuple{Integer,Integer})
+            ParaDict_F[key] = CaliParaVal[ind[1]]
+            ParaDict_C[key] = CaliParaVal[ind[2]]
+        else
+            error("CreateParaDict: Wrong para2ind type")
+        end
+    end
+    
+    return ParaDict_F,ParaDict_C 
 end

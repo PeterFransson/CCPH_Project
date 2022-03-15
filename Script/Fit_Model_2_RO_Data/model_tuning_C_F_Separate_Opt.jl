@@ -1,39 +1,10 @@
-function Calc_logP_GPP_Ec(model::ModelResult,data::RoData,ParaDict::Dict{Symbol,Float64}) 
-    
-    a_GPP,b_GPP,a_Ec,b_Ec = ParaDict[:a_GPP],ParaDict[:b_GPP],ParaDict[:a_Ec],ParaDict[:b_Ec] 
-
-    logP = 0.0
-    for i = 1:length(data.GPP)
-        logP += calc_logP_term(data.GPP[i],model.GPP[i],a_GPP,b_GPP)
-        logP += calc_logP_term(data.Ec[i],model.Ec[i],a_Ec,b_Ec)                      
-    end    
-     
-    return -logP
-end
-
-function Calc_logP_GPP_Ec_Nm_f(model::ModelResult,data::RoData,ParaDict::Dict{Symbol,Float64}) 
-    
-    a_GPP,b_GPP,a_Ec,b_Ec = ParaDict[:a_GPP],ParaDict[:b_GPP],ParaDict[:a_Ec],ParaDict[:b_Ec] 
-    μ_Nₘ_f,b_Nₘ_f = ParaDict[:μ_Nₘ_f],ParaDict[:b_Nₘ_f]
-
-    logP = 0.0
-    for i = 1:length(data.GPP)
-        logP += calc_logP_term(data.GPP[i],model.GPP[i],a_GPP,b_GPP)
-        logP += calc_logP_term(data.Ec[i],model.Ec[i],a_Ec,b_Ec)    
-        logP += abs(model.Nₘ_f[i]-μ_Nₘ_f)/b_Nₘ_f          
-    end    
-     
-    return -logP
-end
-
-
 function log_post_distri_RO_CCPH(para::Array{Float64,1},parasym::Array{Symbol,1},
     RO_data::RO_raw_data;stand_type::String="Fertilized",Calc_logP::Function=Calc_logP_GPP_Ec,
     ParaDictInit=nothing)
     try 
         ParaDict = CreateParaDict(parasym,para;ParaDictInit=ParaDictInit)
 
-        model,weatherts,data = Get_Result_RO_CCPH(ParaDict,RO_data;stand_type)
+        model,weatherts,data = Get_Result_RO_CCPH(ParaDict,RO_data;stand_type=stand_type)
             
         logP = Calc_logP(model,data,ParaDict) 
         return logP       
@@ -191,17 +162,3 @@ function run_calibration(file_name::String,ranges::Array{Tuple{Float64, Float64}
     run_opt_par(file_name,ranges,parasym;ParaDictInit_F=ParaDictInit_F,ParaDictInit_C=ParaDictInit_C)
     return nothing
 end
-
-function work_list()
-    
-    parasym = [:Nₛ,:rₘ,:a_Jmax,:Kₓₗ₀,:i,:α_max,:X0,:τ,:Smax,:a_GPP,:b_GPP,:a_Ec,:b_Ec]
-    ranges = [(0.001,0.1),(10.0,40.0),(0.01,1.0),(0.001,0.1),
-    (0.1,6.0),(0.1,0.5),(-18.0,-0.9),(1.0,15.0),(10.0,25.0),
-    (0.0001,5.0),(0.0001,3.0),(0.0001,5.0),(0.0001,3.0)]
-    ParaDictInit_C = Dict(:μ_Nₘ_f=>0.0113,:b_Nₘ_f=>0.000634)
-    file_name = "RO_Opt_Separate_GPP_EC_20220311" 
-    run_calibration(file_name,ranges,parasym;
-    PopulationSize=50,MaxSteps=100,Calc_logP=Calc_logP_GPP_Ec_Nm_f,ParaDictInit_C=ParaDictInit_C)
-end
-
-work_list()
