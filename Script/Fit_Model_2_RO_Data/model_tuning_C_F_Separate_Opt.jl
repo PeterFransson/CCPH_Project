@@ -33,7 +33,7 @@ function run_opt(file_name::String,ranges::Array{Tuple{Float64, Float64},1},para
     log_likelihood = -BlackBoxOptim.best_fitness(res)  
     log_likelihood_fun = "$(Calc_logP)"
     save("./output/"*file_name_F*".jld","xopt",xopt,"log_likelihood",log_likelihood,
-    "log_likelihood_fun",log_likelihood_fun)
+    "log_likelihood_fun",log_likelihood_fun,"parasym",parasym,"ParaDictInit_F",ParaDictInit_F)
 
     #--Control--
     res = BlackBoxOptim.bboptimize(x::Array{Float64,1}->
@@ -46,7 +46,7 @@ function run_opt(file_name::String,ranges::Array{Tuple{Float64, Float64},1},para
     log_likelihood_fun = "$(Calc_logP)"
 
     save("./output/"*file_name_C*".jld","xopt",xopt,"log_likelihood",log_likelihood,
-    "log_likelihood_fun",log_likelihood_fun)
+    "log_likelihood_fun",log_likelihood_fun,"parasym",parasym,"ParaDictInit_C",ParaDictInit_C)
 end
 
 function run_opt_par(file_name::String,ranges::Array{Tuple{Float64, Float64},1},
