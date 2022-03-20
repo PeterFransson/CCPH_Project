@@ -1,8 +1,6 @@
 # Sampler in R^d
-function RoSampler(log_p::Function, n_steps::Integer, x0::Array{AbstractFloat,1};r_burn_in::Float64=0.3)
-
-    n_burn_in = floor(Integer,n*r_burn_in)
-    n_samples = n_steps-n_burn_in
+function RoSampler(log_p::Function, n_samples::Integer, x0::Array{AbstractFloat,1};n_burn_in::Integer=1000)
+    n_steps = n_burn_in+n_samples    
 
     # Initialise random walk sampler state: r.x current state, r.y proposal
     r = AdaptiveMCMC.RWMState(x0)
@@ -64,15 +62,40 @@ function log_post_distri_RO_CCPH(para::Array{Float64,1},parasym::Array{Symbol,1}
     end           
 end
 
-function run_sampler(file_name::String,ranges::Array{Tuple{Float64, Float64},1},parasym::Array{Symbol,1},x0::Array{AbstractFloat,1};
-    N_samples::Integer=7000,N_BurnIn::Integer=3000,Calc_logP::Function=Calc_logP_GPP_Ec,
+function run_sampler(file_name::String,ranges::Array{Tuple{Float64, Float64},1},parasym::Array{Symbol,1},
+    x0_F::Array{AbstractFloat,1},x0_C::Array{AbstractFloat,1};
+    n_samples::Integer=3000,n_burn_in::Integer=1000,Calc_logP::Function=Calc_logP_GPP_Ec,
     ParaDictInit_F=nothing,ParaDictInit_C=nothing)    
     file_name_F = file_name*"_F"
     file_name_C = file_name*"_C"
 
     RO_data = Load_RO_data()  
 
-    X,p_X = RoSampler(x->log_post_distri_RO_CCPH(x,parasym,ranges,RO_data;
-    stand_type="Fertilized",Calc_logP::Function=Calc_logP_GPP_Ec,ParaDictInit=ParaDictInit_F),
-    n_steps::Integer, x0;r_burn_in::Float64=0.3)
+    samples,p_samples = RoSampler(x->log_post_distri_RO_CCPH(x,parasym,ranges,RO_data;
+    stand_type="Fertilized",Calc_logP=Calc_logP,ParaDictInit=ParaDictInit_F),
+    n_samples, x0_F;n_burn_in=n_burn_in)
+
+    save("./output/"*file_name_F*".jld","samples",samples,"p_samples",p_samples,
+    "parasym",parasym,"ParaDictInit_F",ParaDictInit_F)
+
+    samples,p_samples = RoSampler(x->log_post_distri_RO_CCPH(x,parasym,ranges,RO_data;
+    stand_type="Control",Calc_logP=Calc_logP,ParaDictInit=ParaDictInit_C),
+    n_samples, x0_C;n_burn_in=n_burn_in)
+
+    save("./output/"*file_name_C*".jld","samples",samples,"p_samples",p_samples,
+    "parasym",parasym,"ParaDictInit_F",ParaDictInit_C)
+end
+
+function plot_samples(file_name::String,parasym::Array{Symbol,1})
+    file_name_F = file_name*"_F"
+    file_name_C = file_name*"_C"
+
+    samples_F = load("./output/"*file_name_F*".jld","samples")
+    samples_C = load("./output/"*file_name_F*".jld","samples")
+
+    histogram(transpose(samples_F),layout=size(samples_F,1))
+    savefig("./plots/"*file_name_F*"_F_his.svg")
+
+    histogram(transpose(samples_C),layout=size(samples_C,1))
+    savefig("./plots/"*file_name_C*"_C_his.svg")
 end
