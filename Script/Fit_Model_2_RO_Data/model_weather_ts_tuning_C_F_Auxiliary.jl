@@ -169,9 +169,9 @@ function Max_k_cost(model::CCPHStruct)
 end
 
 function OptimCCPH(growthlength::Float64,model::CCPH.CCPHStruct;K_cost_crit::Float64 = 0.12)
-    
-    gₛ_crit = CCPH.Calc_K_costᵢₙᵥ(K_cost_crit,model)
 
+    gₛ_crit = CCPH.Calc_K_costᵢₙᵥ(K_cost_crit,model)
+    
     gₛ_opt,Nₘ_f_opt = CCPH.CCPHTraitmodel(growthlength,model;gₛ_lim_hi=gₛ_crit)
 
     modeloutput = CCPH.CCPH_run(gₛ_opt,Nₘ_f_opt,growthlength,model)
