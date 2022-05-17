@@ -125,9 +125,23 @@ end
 function calcR²(y_data::Array{Float64,1},f_model::Array{Float64,1})
     ymean = mean(y_data)
     SStot = sum((y_data.-ymean).^2)
-    SSres = sum((y_data.-f_model).^2)
+    SSres = sum((y_data-f_model).^2)
     return 1-SSres/SStot
 end
+
+function calcMAPE(y_data::Array{Float64,1},f_model::Array{Float64,1})
+    return 100*mean(abs.((y_data-f_model)./y_data))
+end
+
+function calcMAPEₘₐₓ(y_data::Array{Float64,1},f_model::Array{Float64,1})
+    return 100*maximum(abs.((y_data-f_model)./y_data))
+end
+
+function calcMSE(y_data::Array{Float64,1},f_model::Array{Float64,1})
+    return mean((y_data-f_model).^2)
+end
+
+calcRMSE(y_data::Array{Float64,1},f_model::Array{Float64,1}) = sqrt(calcMSE(y_data,f_model))
 
 function clac_GPP_R²_annual(GPP::Array{Float64,1},GPP_model::Array{Float64,1},dates::Array{Dates.DateTime,1})
     years = [Dates.year(dates[1])]    
@@ -190,9 +204,10 @@ function CalcEc(gₛ::Float64,growthlength::Float64,model::CCPH.CCPHStruct)
     VPD = model.env.VPD
     P = model.env.P 
     LAI = model.treesize.N*model.treesize.Wf/model.treepar.LMA
+    ratio = (1-exp(-model.treepar.k*LAI))/model.treepar.k
     daylight = growthlength/7 
 
-    Ec = model.cons.r*gₛ*VPD*LAI/P #mol m⁻² s⁻¹
+    Ec = model.cons.r*gₛ*VPD*ratio/P #mol m⁻² s⁻¹
     Ec *= model.cons.M_H2O*daylight*10^3/model.cons.ρ_H2O #mm day⁻¹
 
     return Ec 
@@ -281,7 +296,7 @@ end
 
 function CreateParaDict(;αf::T=460.0,β₁::T=1.27,β₂::T=-0.27,
     Nₛ::T=0.04,rₘ::T=24.0,a_Jmax::T=0.088,b_Jmax::T=0.0,i::T=1.0,Kₓₗ₀::T=0.01,
-    α_max::T=0.36,X0::T=-4.0,τ::T=7.0,Smax::T=16.0,
+    α_max::T=0.36,X0::T=-4.0,τ::T=7.0,Smax::T=17.4,
     a_GPP::T=0.2,b_GPP::T=0.08,a_Ec::T=0.06,b_Ec::T=0.15,
     μ_Nₘ_f::T=0.018,b_Nₘ_f::T=0.0018) where {T<:Float64}
     ParaDict = Dict(:αf=>αf,
@@ -406,14 +421,16 @@ function Run_RO_CCPH(ParaDict::Dict{Symbol,Float64},
     return modelresult
 end
 
-function Get_Result_RO_CCPH(ParaDict::Dict{Symbol,Float64},RO_data::RO_raw_data;stand_type="Fertilized")
+function Get_Result_RO_CCPH(ParaDict::Dict{Symbol,Float64},RO_data::RO_raw_data;stand_type::String="Fertilized",
+    sim_steps::Integer = 84,weather_file::String = "Weather_RO")
     X0,τ,Smax = ParaDict[:X0],ParaDict[:τ],ParaDict[:Smax]
 
-    weatherts,GPP_data = create_weather_struct_RO(RO_data;stand_type=stand_type,X0=X0,τ=τ,Smax=Smax)
+    weatherts,GPP_data = create_weather_struct_RO(RO_data;stand_type=stand_type,X0=X0,τ=τ,Smax=Smax,
+    weather_file=weather_file)
 
     data = Create_RoData(GPP_data,weatherts;stand_type=stand_type)
 
-    modelresult = Run_RO_CCPH(ParaDict,weatherts,data)
+    modelresult = Run_RO_CCPH(ParaDict,weatherts,data;sim_steps=sim_steps)
 
     return modelresult,weatherts,data
 end
@@ -423,6 +440,13 @@ function calc_logP_term(ydata::T,ymodel::T,a::T,b::T) where {T<:Float64}
     σ = a+b*ymodel
     σ>0.0||error("Negative variance")
     return e/σ+log(σ)
+end
+
+function calc_logP_norm_term(ydata::T,ymodel::T,a::T,b::T) where {T<:Float64}
+    e = abs(ydata-ymodel)
+    σ = a+b*ymodel
+    σ>0.0||error("Negative variance")
+    return (e/σ)^2/2+log(σ)
 end
 
 function Calc_logP_GPP_Ec(model::ModelResult,data::RoData,ParaDict::Dict{Symbol,Float64}) 
@@ -438,14 +462,87 @@ function Calc_logP_GPP_Ec(model::ModelResult,data::RoData,ParaDict::Dict{Symbol,
     return -logP
 end
 
-function Calc_logP_GPP_Ec_Nm_f(model::ModelResult,data::RoData,ParaDict::Dict{Symbol,Float64}) 
+function Calc_logP_GPP_Ec_Nm_f(model::ModelResult,data::RoData,ParaDict::Dict{Symbol,Float64};ind::Array{Int64,1}=collect(1:84)) 
+    
+    a_GPP,b_GPP,a_Ec,b_Ec = ParaDict[:a_GPP],ParaDict[:b_GPP],ParaDict[:a_Ec],ParaDict[:b_Ec] 
+    μ_Nₘ_f,b_Nₘ_f = ParaDict[:μ_Nₘ_f],ParaDict[:b_Nₘ_f]
+
+    logP = 0.0
+    for i = ind #1:length(data.GPP)
+        logP += calc_logP_term(data.GPP[i],model.GPP[i],a_GPP,b_GPP)
+        logP += calc_logP_term(data.Ec[i],model.Ec[i],a_Ec,b_Ec)    
+        logP += abs(model.Nₘ_f[i]-μ_Nₘ_f)/b_Nₘ_f          
+    end    
+     
+    return -logP
+end
+
+function Calc_logP_GPP_Nm_f(model::ModelResult,data::RoData,ParaDict::Dict{Symbol,Float64};ind::Array{Int64,1}=collect(1:84)) 
+    
+    a_GPP,b_GPP,a_Ec,b_Ec = ParaDict[:a_GPP],ParaDict[:b_GPP],ParaDict[:a_Ec],ParaDict[:b_Ec] 
+    μ_Nₘ_f,b_Nₘ_f = ParaDict[:μ_Nₘ_f],ParaDict[:b_Nₘ_f]
+
+    logP = 0.0
+    for i = ind #1:length(data.GPP)
+        logP += calc_logP_term(data.GPP[i],model.GPP[i],a_GPP,b_GPP)            
+        logP += abs(model.Nₘ_f[i]-μ_Nₘ_f)/b_Nₘ_f          
+    end    
+     
+    return -logP
+end
+
+function Calc_logP_GPP(model::ModelResult,data::RoData,ParaDict::Dict{Symbol,Float64}) 
     
     a_GPP,b_GPP,a_Ec,b_Ec = ParaDict[:a_GPP],ParaDict[:b_GPP],ParaDict[:a_Ec],ParaDict[:b_Ec] 
     μ_Nₘ_f,b_Nₘ_f = ParaDict[:μ_Nₘ_f],ParaDict[:b_Nₘ_f]
 
     logP = 0.0
     for i = 1:length(data.GPP)
-        logP += calc_logP_term(data.GPP[i],model.GPP[i],a_GPP,b_GPP)
+        logP += calc_logP_term(data.GPP[i],model.GPP[i],a_GPP,b_GPP)                
+    end    
+     
+    return -logP
+end
+
+function Calc_logP_GPP_Ec_Nm_f_sep(model::ModelResult,data::RoData,ParaDict::Dict{Symbol,Float64}) 
+    
+    a_GPP,b_GPP,a_Ec,b_Ec = ParaDict[:a_GPP],ParaDict[:b_GPP],ParaDict[:a_Ec],ParaDict[:b_Ec] 
+    μ_Nₘ_f,b_Nₘ_f = ParaDict[:μ_Nₘ_f],ParaDict[:b_Nₘ_f]
+
+    logP_GPP=logP_Ec=logP_Nm_f= 0.0
+
+    for i = 1:length(data.GPP)
+        logP_GPP += calc_logP_term(data.GPP[i],model.GPP[i],a_GPP,b_GPP)
+        logP_Ec += calc_logP_term(data.Ec[i],model.Ec[i],a_Ec,b_Ec)    
+        logP_Nm_f += abs(model.Nₘ_f[i]-μ_Nₘ_f)/b_Nₘ_f          
+    end    
+     
+    return [-logP_GPP,-logP_Ec,-logP_Nm_f]
+end
+
+function Calc_logP_GPP_Ec_Nm_f_norm(model::ModelResult,data::RoData,ParaDict::Dict{Symbol,Float64}) 
+    
+    a_GPP,b_GPP,a_Ec,b_Ec = ParaDict[:a_GPP],ParaDict[:b_GPP],ParaDict[:a_Ec],ParaDict[:b_Ec] 
+    μ_Nₘ_f,b_Nₘ_f = ParaDict[:μ_Nₘ_f],ParaDict[:b_Nₘ_f]
+
+    logP = 0.0
+    for i = 1:length(data.GPP)
+        logP += calc_logP_norm_term(data.GPP[i],model.GPP[i],a_GPP,b_GPP)
+        logP += calc_logP_norm_term(data.Ec[i],model.Ec[i],a_Ec,b_Ec)    
+        logP += abs(model.Nₘ_f[i]-μ_Nₘ_f)/b_Nₘ_f          
+    end    
+     
+    return -logP
+end
+
+function Calc_logP_GPP_Ec_Nm_f_weight(model::ModelResult,data::RoData,ParaDict::Dict{Symbol,Float64};ind::Array{Int64,1}=collect(1:84),λ_gpp::Float64=1.0) 
+    
+    a_GPP,b_GPP,a_Ec,b_Ec = ParaDict[:a_GPP],ParaDict[:b_GPP],ParaDict[:a_Ec],ParaDict[:b_Ec] 
+    μ_Nₘ_f,b_Nₘ_f = ParaDict[:μ_Nₘ_f],ParaDict[:b_Nₘ_f]
+
+    logP = 0.0
+    for i = ind#1:length(data.GPP)
+        logP += λ_gpp*calc_logP_term(data.GPP[i],model.GPP[i],a_GPP,b_GPP)
         logP += calc_logP_term(data.Ec[i],model.Ec[i],a_Ec,b_Ec)    
         logP += abs(model.Nₘ_f[i]-μ_Nₘ_f)/b_Nₘ_f          
     end    
