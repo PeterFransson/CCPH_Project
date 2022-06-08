@@ -520,23 +520,83 @@ function work_list()
                 end
                 end
                 =#
-                
+    
+    #=            
     calibparavec = CalibParaVec(
-        (:Nₛ,0.0001,0.1,true),(:rₘ,5.0,40.0),(:a_Jmax,0.01,1.0),
-        (:Kₓₗ₀,0.0005,0.1,true),(:α_max,0.1,0.5,true),
-        (:τ,1.0,15.0,true),                        
+        (:Nₛ,0.0001,0.1,true),(:a_Jmax,0.01,1.0),
+        (:Kₓₗ₀,0.0005,0.1,true),(:i,0.1,10.0),
+        (:α_max,0.1,0.5),
+        (:τ,1.0,15.0),(:Smax,10.0,25.0),                        
         (:a_GPP,0.0001,5.0),(:b_GPP,0.0001,3.0),(:a_Ec,0.0001,5.0),(:b_Ec,0.0001,3.0)) 
-    ParaDictInit_C = Dict(:μ_Nₘ_f=>0.0113,:b_Nₘ_f=>0.000634)       
+    ParaDictInit_C = Dict(:μ_Nₘ_f=>0.0113,:b_Nₘ_f=>0.0018)   
     ranges,para2ind = CreateOptVar(calibparavec) 
-    file_name = "RO_Opt_GPP_Ec_Nm_f_20220516"
-
+    file_name = "RO_Opt_GPP_Ec_Nm_f_20220604"
+    
     run_CrossValidation(file_name,
     10,
     ranges,
     para2ind;
-    PopulationSize=300,
-    MaxSteps=40000,
+    PopulationSize=200,
+    MaxSteps=30000,
     Calc_logP=Calc_logP_GPP_Ec_Nm_f,
-    ParaDictInit_C=ParaDictInit_C)
+    ParaDictInit_C=ParaDictInit_C)   
+    =#
+        
+    calibparavec = CalibParaVec(
+        (:Nₛ,0.0001,0.1,true),(:a_Jmax,0.01,1.0),
+        (:Kₓₗ₀,0.0005,0.1,true),(:i,0.1,10.0),
+        (:α_max,0.1,0.5),
+        (:τ,1.0,15.0),(:Smax,10.0,25.0),                        
+        (:a_GPP,0.0001,5.0),(:b_GPP,0.0001,3.0))#,(:a_Ec,0.0001,5.0),(:b_Ec,0.0001,3.0)) 
+    ParaDictInit_C = Dict(:μ_Nₘ_f=>0.0113,:b_Nₘ_f=>0.004)   
+    ParaDictInit_F = Dict(:μ_Nₘ_f=>0.018,:b_Nₘ_f=>0.004) 
+    ranges,para2ind = CreateOptVar(calibparavec) 
+    file_name = "RO_Opt_GPP_Nm_f_20220604_4"
+    
+    run_CrossValidation(file_name,
+    10,
+    ranges,
+    para2ind;
+    PopulationSize=200,
+    MaxSteps=30000,
+    Calc_logP=Calc_logP_GPP_Nm_f,
+    ParaDictInit_C=ParaDictInit_C,
+    ParaDictInit_F=ParaDictInit_F)    
+
+    #=
+    parasym = [:Nₛ,
+    :a_Jmax,
+    :Kₓₗ₀,
+    :i,
+    :α_max,
+    :τ,
+    :a_GPP,
+    :b_GPP,
+    :a_Ec,
+    :b_Ec]
+    ranges = [(0.0001,0.1),
+    (0.01,1.0),
+    (0.0005,0.1),
+    (0.1,10.0),
+    (0.1,0.5),
+    (1.0,15.0),
+    (0.0001,5.0),
+    (0.0001,3.0),
+    (0.0001,5.0),
+    (0.0001,3.0)]
+    
+    ParaDictInit_C = Dict(:μ_Nₘ_f=>0.0113,:b_Nₘ_f=>0.000634)
+    file_name = "RO_Opt_Separate_GPP_Ec_Nm_f_20220602"
+    run_CrossValidation(file_name,
+    10,
+    ranges,
+    parasym;
+    PopulationSize=200,
+    MaxSteps=30000,
+    Calc_logP=Calc_logP_GPP_Ec_Nm_f,
+    ParaDictInit_C=ParaDictInit_C)  
+    =#
+    
+    return nothing
 end
 work_list()

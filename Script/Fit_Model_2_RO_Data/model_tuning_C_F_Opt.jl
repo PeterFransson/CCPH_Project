@@ -215,6 +215,23 @@ function run_opt_par(file_name::String,ranges::Array{Tuple{Float64, Float64},1},
 
     plot(pl1,pl2,pl3,pl4,layout=(2,2),legends=false)    
     savefig("./plots/"*file_name*"_annual_error.svg")
+
+    plot([0.0,15.0],[0.0,0.0],xlabel="Data GPP",ylabel="Res GPP")
+    plot!(data_F.GPP[ind],model_F.GPP[ind]-data_F.GPP[ind],seriestype=:scatter)
+    pl1 = plot!(data_F.GPP[ind_val],model_F.GPP[ind_val]-data_F.GPP[ind_val],seriestype=:scatter)
+    plot([0.0,15.0],[0.0,0.0],xlabel="Data GPP",ylabel="Res GPP")
+    plot!(data_C.GPP[ind],model_C.GPP[ind]-data_C.GPP[ind],seriestype=:scatter)
+    pl2 = plot!(data_C.GPP[ind_val],model_C.GPP[ind_val]-data_C.GPP[ind_val],seriestype=:scatter)
+
+    plot([0.0,2.0],[0.0,0.0],xlabel="Data Ec",ylabel="Res Ec")
+    plot!(data_F.Ec[ind],model_F.Ec[ind]-data_F.Ec[ind],seriestype=:scatter)
+    pl3 = plot!(data_F.Ec[ind_val],model_F.Ec[ind_val]-data_F.Ec[ind_val],seriestype=:scatter)
+    plot([0.0,2.0],[0.0,0.0],xlabel="Data Ec",ylabel="Res Ec")
+    plot!(data_C.Ec[ind],model_C.Ec[ind]-data_C.Ec[ind],seriestype=:scatter)
+    pl4 = plot!(data_C.Ec[ind_val],model_C.Ec[ind_val]-data_C.Ec[ind_val],seriestype=:scatter)
+
+    plot(pl1,pl2,pl3,pl4,layout=(2,2),legends=false)    
+    savefig("./plots/"*file_name*"_residuals.svg")
 end
 
 function run_calibration(file_name::String,

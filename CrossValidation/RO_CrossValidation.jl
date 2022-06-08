@@ -4,6 +4,7 @@ mutable struct ModelStat{T<:Float64}
     MAPE::T
     MSE::T
     RMSE::T
+    R²_tot::T
 end
 function (K::ModelStat)(Stat_type::String)
     if Stat_type=="R²"
@@ -16,6 +17,8 @@ function (K::ModelStat)(Stat_type::String)
         return K.MSE
     elseif Stat_type=="RMSE" 
         return K.RMSE
+    elseif Stat_type=="R²_tot"
+        return K.R²_tot
     else
         error("Stat_type either: \"R²\", \"PearsonCor\", \"MAPE\", \"MSE\", or \"RMSE\"")           
     end
@@ -54,25 +57,29 @@ function Get_Model_Stat(ParaDict::Dict{Symbol,Float64};
     cor(data.GPP[ind_train],model.GPP[ind_train]),
     calcMAPE(data.GPP[ind_train],model.GPP[ind_train]),
     calcMSE(data.GPP[ind_train],model.GPP[ind_train]),
-    calcRMSE(data.GPP[ind_train],model.GPP[ind_train]))
+    calcRMSE(data.GPP[ind_train],model.GPP[ind_train]),
+    calcR²(data.GPP,model.GPP))
     
     modelval_GPP = ModelStat(calcR²(data.GPP[ind_val],model.GPP[ind_val]),
     cor(data.GPP[ind_val],model.GPP[ind_val]),
     calcMAPE(data.GPP[ind_val],model.GPP[ind_val]),
     calcMSE(data.GPP[ind_val],model.GPP[ind_val]),
-    calcRMSE(data.GPP[ind_val],model.GPP[ind_val]))
+    calcRMSE(data.GPP[ind_val],model.GPP[ind_val]),
+    calcR²(data.GPP,model.GPP))
 
     modeltrain_Ec = ModelStat(calcR²(data.Ec[ind_train],model.Ec[ind_train]),
     cor(data.Ec[ind_train],model.Ec[ind_train]),
     calcMAPE(data.Ec[ind_train],model.Ec[ind_train]),
     calcMSE(data.Ec[ind_train],model.Ec[ind_train]),
-    calcRMSE(data.Ec[ind_train],model.Ec[ind_train]))
+    calcRMSE(data.Ec[ind_train],model.Ec[ind_train]),
+    calcR²(data.Ec,model.Ec))
     
     modelval_Ec = ModelStat(calcR²(data.Ec[ind_val],model.Ec[ind_val]),
     cor(data.Ec[ind_val],model.Ec[ind_val]),
     calcMAPE(data.Ec[ind_val],model.Ec[ind_val]),
     calcMSE(data.Ec[ind_val],model.Ec[ind_val]),
-    calcRMSE(data.Ec[ind_val],model.Ec[ind_val]))
+    calcRMSE(data.Ec[ind_val],model.Ec[ind_val]),
+    calcR²(data.Ec,model.Ec))
 
     modeltrain = ModelStatSum(modeltrain_GPP,modeltrain_Ec)
     modelval = ModelStatSum(modelval_GPP,modelval_Ec)    
@@ -91,6 +98,27 @@ function Get_Model_Stat(file_name::String,
 
     ParaDict_F,ParaDict_C = CreateParaDict(para2ind,par;
     ParaDictInit_F=ParaDictInit_F,ParaDictInit_C=ParaDictInit_C)
+      
+    modeltrain_F,modelval_F = Get_Model_Stat(ParaDict_F;stand_type="Fertilized",ind_train=ind_train)       
+    modeltrain_C,modelval_C = Get_Model_Stat(ParaDict_C;stand_type="Control",ind_train=ind_train)
+
+    return (modeltrain_F,modelval_F,modeltrain_C,modelval_C)
+end
+
+function Get_Model_Stat(file_name::String,
+    ranges::Array{Tuple{Float64,Float64},1},
+    parasym::Array{Symbol,1};
+    ParaDictInit_F::Union{Nothing,Dict{Symbol,Float64}}=nothing,
+    ParaDictInit_C::Union{Nothing,Dict{Symbol,Float64}}=nothing)
+
+    file_name_F = file_name*"_F"
+    file_name_C = file_name*"_C"
+    ind_train = load("./output/"*file_name_F*".jld","ind_train")
+    par_F = load("./output/"*file_name_F*".jld","xopt") 
+    par_C = load("./output/"*file_name_C*".jld","xopt")
+
+    ParaDict_F = CreateParaDict(parasym,par_F;ParaDictInit=ParaDictInit_F)
+    ParaDict_C = CreateParaDict(parasym,par_C;ParaDictInit=ParaDictInit_C)
       
     modeltrain_F,modelval_F = Get_Model_Stat(ParaDict_F;stand_type="Fertilized",ind_train=ind_train)       
     modeltrain_C,modelval_C = Get_Model_Stat(ParaDict_C;stand_type="Control",ind_train=ind_train)
@@ -121,6 +149,7 @@ function writestandstat(io::IO,
     println(io,"Cor:")
     writestat(io,modeltrain,modelval,Data_type,"PearsonCor")
     println(io,"")
+    println(io,"R² (tot): $(round.((GetStatArray(modeltrain,Data_type,"R²_tot")),digits=2))")
     print(io,"Mean RMSE: $(round(mean(GetStatArray(modeltrain,Data_type,"RMSE")),digits=2)) ")
     println(io,"($(round(mean(GetStatArray(modelval,Data_type,"RMSE")),digits=2)))")
     print(io,"Mean MAPE: $(round(mean(GetStatArray(modeltrain,Data_type,"MAPE")),digits=2)) ")
@@ -233,9 +262,12 @@ function run_CrossValidation(file_name::String,
     ind_train_vec = Array{Array{Int64,1},1}(undef,n_runs)
 
     RO_data = Load_RO_data()
+
+    isdir("./output/"*file_name)|| mkdir("./output/"*file_name)
+    isdir("./plots/"*file_name) || mkdir("./plots/"*file_name)
     
     Threads.@threads for ix = 1:n_runs
-        file_name_save = file_name*"_$(ix)"
+        file_name_save = file_name*"/"*file_name*"_$(ix)"
         ind_train,ind_val = CreateTrainnValInd(collect(1:84))        
 
         ind_train_vec[ix] = ind_train
@@ -252,7 +284,7 @@ function run_CrossValidation(file_name::String,
     end
         
     for ix = 1:n_runs
-        file_name_save = file_name*"_$(ix)"
+        file_name_save = file_name*"/"*file_name*"_$(ix)"
 
         save_run_opt(file_name_save,
         xopt[ix],
@@ -282,13 +314,104 @@ function run_CrossValidation(file_name::String,
         ParaDictInit_C=ParaDictInit_C)
     end    
 
-    writestat2file(file_name,
+    writestat2file(file_name*"/"*file_name,
     modeltrain_F,
     modelval_F,
     modeltrain_C,
     modelval_C)    
     
-    CreateStatPlot(file_name,
+    CreateStatPlot(file_name*"/"*file_name,
+    n_runs,
+    modeltrain_F,
+    modelval_F,
+    modeltrain_C,
+    modelval_C)
+end
+
+function run_CrossValidation(file_name::String,
+    n_runs::Integer,
+    ranges::Array{Tuple{Float64, Float64},1},
+    parasym::Array{Symbol,1};
+    PopulationSize::Integer=50,
+    MaxSteps::Integer=10000,
+    Calc_logP::Function=Calc_logP_GPP_Ec_Nm_f,
+    ParaDictInit_F::Union{Nothing,Dict{Symbol,Float64}}=nothing,
+    ParaDictInit_C::Union{Nothing,Dict{Symbol,Float64}}=nothing)
+    
+    modeltrain_F = Array{ModelStatSum,1}(undef,n_runs)
+    modelval_F = Array{ModelStatSum,1}(undef,n_runs)
+    modeltrain_C = Array{ModelStatSum,1}(undef,n_runs)
+    modelval_C = Array{ModelStatSum,1}(undef,n_runs)
+
+    xopt_F = Array{Array{Float64,1},1}(undef,n_runs)
+    log_likelihood_F = Array{Float64,1}(undef,n_runs)
+    xopt_C = Array{Array{Float64,1},1}(undef,n_runs)
+    log_likelihood_C = Array{Float64,1}(undef,n_runs)
+    ind_train_vec = Array{Array{Int64,1},1}(undef,n_runs)
+
+    RO_data = Load_RO_data()
+
+    isdir("./output/"*file_name)|| mkdir("./output/"*file_name)
+    isdir("./plots/"*file_name) || mkdir("./plots/"*file_name)
+    
+    Threads.@threads for ix = 1:n_runs
+        file_name_save = file_name*"/"*file_name*"_$(ix)"
+        ind_train,ind_val = CreateTrainnValInd(collect(1:84))        
+
+        ind_train_vec[ix] = ind_train
+
+        xopt_F[ix],log_likelihood_F[ix],xopt_C[ix],log_likelihood_C[ix] = run_opt(file_name_save,
+        ranges,
+        parasym,
+        RO_data;
+        PopulationSize=PopulationSize,
+        MaxSteps=MaxSteps,
+        Calc_logP=Calc_logP,
+        ParaDictInit_F=ParaDictInit_F,
+        ParaDictInit_C=ParaDictInit_C,
+        ind=ind_train)        
+    end
+        
+    for ix = 1:n_runs
+        file_name_save = file_name*"/"*file_name*"_$(ix)"        
+
+        save_run_opt(file_name_save,
+        xopt_F[ix],
+        xopt_C[ix],
+        log_likelihood_F[ix],
+        log_likelihood_C[ix],
+        parasym;
+        Calc_logP=Calc_logP,
+        ParaDictInit_F=ParaDictInit_F,
+        ParaDictInit_C=ParaDictInit_C,
+        ind=ind_train_vec[ix])
+        
+        run_opt_par(file_name_save,
+        ranges,
+        parasym;
+        ParaDictInit_F=ParaDictInit_F,
+        ParaDictInit_C=ParaDictInit_C)        
+
+        run_validation_RO(file_name_save,
+        ranges,
+        parasym;
+        ParaDictInit_F=ParaDictInit_F,
+        ParaDictInit_C=ParaDictInit_C)
+
+        modeltrain_F[ix],modelval_F[ix],modeltrain_C[ix],modelval_C[ix] = Get_Model_Stat(file_name_save,
+        ranges,
+        parasym;
+        ParaDictInit_F=ParaDictInit_F,
+        ParaDictInit_C=ParaDictInit_C)
+    end    
+
+    writestat2file(file_name*"/"*file_name,
+    modeltrain_F,
+    modelval_F,
+    modeltrain_C,
+    modelval_C)    
+    
+    CreateStatPlot(file_name*"/"*file_name,
     n_runs,
     modeltrain_F,
     modelval_F,

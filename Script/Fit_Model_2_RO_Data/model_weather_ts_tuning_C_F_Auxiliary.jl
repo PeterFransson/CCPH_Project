@@ -2,7 +2,7 @@ function Calctranpiration(VPD_z::T,Sₑ::T;
     E_cm_ref::T=1.812,s_VPD_z::T=3.121,s_Sₑ::T=18.342) where {T<:Float64}
     #Tor-Ngern et al. 2017 model for estimating canopy transpiration E_c (mm/d) 
     #Default parameter values taken are form the original paper
-    #for estimating E_c for Rosinedal Scots pine stand
+    #for estimating E_c for Rosinedal Scots pine stand (both fertilized and control)
     #---Input---
     #VPD_z day-length normalized vapor pressure deficit (VPD*Day length/24, Pa) 
     #Sₑ effective saturation (-)
@@ -28,8 +28,10 @@ function Est_Ec(daylight::T;
     return Ec
 end
 
-function Est_gₛ(LAI::T,daylight::T;cons::CCPH.Constants=CCPH.Constants(),
+function Est_gₛ(LAI::T,daylight::T;
+    cons::CCPH.Constants=CCPH.Constants(),
     env::CCPH.EnvironmentStruct=CCPH.EnvironmentStruct(),
+    treepar::CCPH.TreePar=CCPH.TreePar(),
     E_cm_ref::T=1.812,s_VPD_z::T=3.121,s_Sₑ::T=18.342) where {T<:Float64} 
     #Estimating stomatal conductance gₛ (mol m⁻² leaf area s⁻¹) based on weather data,
     #using the Tor-Ngern et al. 2017 model for estimating canopy transpiration 
@@ -43,10 +45,12 @@ function Est_gₛ(LAI::T,daylight::T;cons::CCPH.Constants=CCPH.Constants(),
     Sₑ = CCPH.CalcSₑ.(θₛ)
     Ec = Calctranpiration.(VPD_z,Sₑ;E_cm_ref=E_cm_ref,s_VPD_z=s_VPD_z,s_Sₑ=s_Sₑ) #mm/day
     Ec *= 10^-3*cons.ρ_H2O/cons.M_H2O/daylight #mol m⁻² s⁻¹
-    gₛ = Ec*P/(VPD*cons.r*LAI)
+    λ = (1-exp(-treepar.k*LAI))/k
+    gₛ = Ec*P/(VPD*cons.r*λ)
     return gₛ
 end
 
+#For weekly mean GPP data, index 1-21=>2015,index 24-44=>2016, index 45-64=>2017, index 65-82=>2018
 function Find_data_ind(i::Integer)
     if 1<=i<=21
         return 1
@@ -59,6 +63,7 @@ function Find_data_ind(i::Integer)
     end
 end
 
+#Container for Rosinedal data
 mutable struct RoData{T<:Float64}
     H::Array{T,1}
     B::Array{T,1}
@@ -70,6 +75,7 @@ mutable struct RoData{T<:Float64}
     Ec::Array{T,1}
 end
 
+#Create gₛ and Ec time series for Rosinedal data (ROData)  
 function Create_gₛ_Ec_Data(weatherts::CCPH.WeatherTS,LAI::Array{T,1}) where {T<:Float64}
     gₛ_data = Float64[]    
     Ec_data = Float64[]
@@ -88,6 +94,8 @@ end
 
 function Create_RoData(GPP_data::Array{T,1},weatherts::CCPH.WeatherTS;
     treepar::TreePar=TreePar(),stand_type::String="Fertilized") where {T<:Float64}
+    #Simualted size data from Hyungwoo Lim, data corresponding to mean trees size during
+    #growth period: [2015,2016,2017,2018]
     if stand_type=="Fertilized"
         H_data = [19.07,19.34,19.64,19.87] 
         B_data = [0.0452,0.0467,0.0479,0.0487]
@@ -113,6 +121,7 @@ function Create_RoData(GPP_data::Array{T,1},weatherts::CCPH.WeatherTS;
     return data
 end
 
+#Create container for Rosinedal data for Fertilized and Control stand
 function Create_RoData_C_F(GPP_data_F::Array{T,1},GPP_data_C::Array{T,1},
     weatherts_F::CCPH.WeatherTS,weatherts_C::CCPH.WeatherTS;treepar::TreePar=TreePar()) where {T<:Float64} 
     
@@ -200,6 +209,7 @@ function OptimCCPH!(i::Integer,model::CCPH.CCPHStruct,
     return modeloutput,gₛ_opt,Nₘ_f_opt
 end
 
+#Calcualte model canopy transpiration (Ec)
 function CalcEc(gₛ::Float64,growthlength::Float64,model::CCPH.CCPHStruct)
     VPD = model.env.VPD
     P = model.env.P 
@@ -362,7 +372,7 @@ function Initi_model_struct(H::T,Hc::T,N::T,Wf::T,B::T,αf::T,β₁::T,β₂::T,
     kinetic = PhotoKineticRates()
     photo = PhotoPar(kinetic,env.Tₐ)    
     hydPar = HydraulicsPar(;Kₓₗ₀=Kₓₗ₀,i=i)
-    treepar = TreePar(;αf=αf,β₁=β₁,β₂=β₂,rₘ=rₘ,Nₛ=Nₛ,a_Jmax=a_Jmax,b_Jmax=b_Jmax,α_max=α_max)   
+    treepar = TreePar(;αf=αf,β₁=β₁,β₂=β₂,rₘ_ref=rₘ,Nₛ=Nₛ,a_Jmax=a_Jmax,b_Jmax=b_Jmax,α_max=α_max)   
        
     Hs = H-Hc   
     As = Wf/treepar.αf
@@ -449,14 +459,15 @@ function calc_logP_norm_term(ydata::T,ymodel::T,a::T,b::T) where {T<:Float64}
     return (e/σ)^2/2+log(σ)
 end
 
-function Calc_logP_GPP_Ec(model::ModelResult,data::RoData,ParaDict::Dict{Symbol,Float64}) 
+function Calc_logP_GPP_Ec(model::ModelResult,data::RoData,ParaDict::Dict{Symbol,Float64};ind::Array{Int64,1}=collect(1:84)) 
     
     a_GPP,b_GPP,a_Ec,b_Ec = ParaDict[:a_GPP],ParaDict[:b_GPP],ParaDict[:a_Ec],ParaDict[:b_Ec] 
+    μ_Nₘ_f,b_Nₘ_f = ParaDict[:μ_Nₘ_f],ParaDict[:b_Nₘ_f]
 
     logP = 0.0
-    for i = 1:length(data.GPP)
+    for i = ind #1:length(data.GPP)
         logP += calc_logP_term(data.GPP[i],model.GPP[i],a_GPP,b_GPP)
-        logP += calc_logP_term(data.Ec[i],model.Ec[i],a_Ec,b_Ec)                      
+        logP += calc_logP_term(data.Ec[i],model.Ec[i],a_Ec,b_Ec)                 
     end    
      
     return -logP
@@ -491,14 +502,14 @@ function Calc_logP_GPP_Nm_f(model::ModelResult,data::RoData,ParaDict::Dict{Symbo
     return -logP
 end
 
-function Calc_logP_GPP(model::ModelResult,data::RoData,ParaDict::Dict{Symbol,Float64}) 
+function Calc_logP_GPP(model::ModelResult,data::RoData,ParaDict::Dict{Symbol,Float64};ind::Array{Int64,1}=collect(1:84)) 
     
     a_GPP,b_GPP,a_Ec,b_Ec = ParaDict[:a_GPP],ParaDict[:b_GPP],ParaDict[:a_Ec],ParaDict[:b_Ec] 
     μ_Nₘ_f,b_Nₘ_f = ParaDict[:μ_Nₘ_f],ParaDict[:b_Nₘ_f]
 
     logP = 0.0
-    for i = 1:length(data.GPP)
-        logP += calc_logP_term(data.GPP[i],model.GPP[i],a_GPP,b_GPP)                
+    for i = ind #1:length(data.GPP)
+        logP += calc_logP_term(data.GPP[i],model.GPP[i],a_GPP,b_GPP)                 
     end    
      
     return -logP

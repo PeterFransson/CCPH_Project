@@ -8,8 +8,6 @@ function run_validation_RO(ParaDict::Dict{Symbol,Float64},file_name::String;
         error("Wrong input. Either \"Fertilized\" or \"Control\"")
     end 
 
-    #2019: 85:105
-    #2018: 65:84
     weather_file="Weather_RO"  
 
     RO_data = Load_RO_data(weather_file=weather_file)           
@@ -56,12 +54,14 @@ function run_validation_RO(ParaDict::Dict{Symbol,Float64},file_name::String;
 end
 
 function run_validation_RO(file_name::String,ranges::Array{Tuple{Float64, Float64},1},
-    parasym::Array{Symbol,1};ParaDictInit_F=nothing,ParaDictInit_C=nothing,ind::Array{Int64,1}=collect(65:84))
+    parasym::Array{Symbol,1};ParaDictInit_F=nothing,ParaDictInit_C=nothing)
     file_name_F = file_name*"_F"
     file_name_C = file_name*"_C"
 
     par_F = load("./output/"*file_name_F*".jld","xopt")     
     par_C = load("./output/"*file_name_C*".jld","xopt") 
+    ind_train = load("./output/"*file_name_F*".jld","ind_train")   
+    ind = setdiff(1:84, ind_train)
 
     ParaDict_F = CreateParaDict(parasym,par_F;ParaDictInit=ParaDictInit_F)
     run_validation_RO(ParaDict_F,file_name;stand_type="Fertilized",ind=ind)
