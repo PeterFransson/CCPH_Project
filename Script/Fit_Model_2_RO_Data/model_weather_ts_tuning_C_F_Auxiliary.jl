@@ -45,7 +45,7 @@ function Est_gₛ(LAI::T,daylight::T;
     Sₑ = CCPH.CalcSₑ.(θₛ)
     Ec = Calctranpiration.(VPD_z,Sₑ;E_cm_ref=E_cm_ref,s_VPD_z=s_VPD_z,s_Sₑ=s_Sₑ) #mm/day
     Ec *= 10^-3*cons.ρ_H2O/cons.M_H2O/daylight #mol m⁻² s⁻¹
-    λ = (1-exp(-treepar.k*LAI))/k
+    λ = (1-exp(-treepar.k*LAI))/treepar.k
     gₛ = Ec*P/(VPD*cons.r*λ)
     return gₛ
 end

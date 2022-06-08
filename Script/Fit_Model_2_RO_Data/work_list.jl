@@ -548,17 +548,17 @@ function work_list()
         (:α_max,0.1,0.5),
         (:τ,1.0,15.0),(:Smax,10.0,25.0),                        
         (:a_GPP,0.0001,5.0),(:b_GPP,0.0001,3.0))#,(:a_Ec,0.0001,5.0),(:b_Ec,0.0001,3.0)) 
-    ParaDictInit_C = Dict(:μ_Nₘ_f=>0.0113,:b_Nₘ_f=>0.004)   
-    ParaDictInit_F = Dict(:μ_Nₘ_f=>0.018,:b_Nₘ_f=>0.004) 
+    ParaDictInit_C = Dict(:μ_Nₘ_f=>0.0113,:b_Nₘ_f=>0.0018)   
+    ParaDictInit_F = Dict(:μ_Nₘ_f=>0.018,:b_Nₘ_f=>0.0018) 
     ranges,para2ind = CreateOptVar(calibparavec) 
-    file_name = "RO_Opt_GPP_Nm_f_20220604_4"
+    file_name = "RO_Opt_GPP_Nm_f_20220608"
     
     run_CrossValidation(file_name,
     10,
     ranges,
     para2ind;
-    PopulationSize=200,
-    MaxSteps=30000,
+    PopulationSize=20,
+    MaxSteps=300,
     Calc_logP=Calc_logP_GPP_Nm_f,
     ParaDictInit_C=ParaDictInit_C,
     ParaDictInit_F=ParaDictInit_F)    
