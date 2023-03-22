@@ -298,10 +298,13 @@ function Est_C_assimilation(GPP_Data::T,LAI::T,N::T,weatherts::CCPH.WeatherTS,
 end
 
 mutable struct ModelResult{T<:Array{Float64,1}}
-    GPP::T
+    GPP::T  
     Ec::T
-    gₛ::T
+    gₛ::T #stomatal conductance (mol C m⁻² leaf area s⁻¹)  
     Nₘ_f::T
+    A::T #leaf C assimilation time series (mol C m⁻² leaf area s⁻¹) 
+    E::T #leaf transpiration time series (mol H₂O m² leaf area s⁻¹)
+    cᵢ::T #intercellular carbon dioxide concentration (Pa)
 end
 
 function CreateParaDict(;αf::T=460.0,β₁::T=1.27,β₂::T=-0.27,
@@ -421,13 +424,19 @@ function Run_RO_CCPH(ParaDict::Dict{Symbol,Float64},
     EC_model = zeros(sim_steps)  
     Nₘ_f_model = zeros(sim_steps)
     gₛ_model = zeros(sim_steps)
+    A_model = zeros(sim_steps)
+    E_model = zeros(sim_steps)
+    cᵢ_model = zeros(sim_steps)
     for j = 1:sim_steps   
         model,kinetic = Initi_model_struct(j,data,ParaDict::Dict{Symbol,Float64})
         
         GPP_model[j],EC_model[j], modeloutput, gₛ_model[j], Nₘ_f_model[j] = CalcModelOutput!(j,model,weatherts,kinetic)
+        A_model[j] = modeloutput.A
+        E_model[j] = modeloutput.E
+        cᵢ_model[j] = modeloutput.cᵢ
     end 
     
-    modelresult = ModelResult(GPP_model,EC_model,gₛ_model,Nₘ_f_model )
+    modelresult = ModelResult(GPP_model,EC_model,gₛ_model,Nₘ_f_model,A_model,E_model,cᵢ_model)
     return modelresult
 end
 

@@ -238,11 +238,21 @@ function run_opt_par(file_name::String,ranges::Array{Tuple{Float64, Float64},1},
     plot(pl1,pl2,pl3,pl4,layout=(2,2),legends=false)    
     savefig("./plots/"*file_name*"_residuals.svg")
 
-    create_wue_plot("./plots/"*file_name*"_wue_F.svg",model_F,weatherts_F)  
-    create_wue_plot("./plots/"*file_name*"_wue_C.svg",model_C,weatherts_C) 
+    create_wue_plot("./plots/"*file_name*"_wue_F",model_F,weatherts_F)  
+    create_wue_plot("./plots/"*file_name*"_wue_C",model_C,weatherts_C) 
+    create_wue_stat("./output/"*file_name*"_wue_F",model_F,weatherts_F)
+    create_wue_stat("./output/"*file_name*"_wue_C",model_C,weatherts_C)
 
-    create_trait_plots("./plots/"*file_name*"_trait_F.svg",model_F,weatherts_F)
-    create_trait_plots("./plots/"*file_name*"_trait_F.svg",model_C,weatherts_C)
+    create_trait_plots("./plots/"*file_name*"_trait_F",model_F,weatherts_F)
+    create_trait_plots("./plots/"*file_name*"_trait_C",model_C,weatherts_C)
+    create_trait_stat("./output/"*file_name*"_trait_F",model_F,weatherts_F)
+    create_trait_stat("./output/"*file_name*"_trait_C",model_C,weatherts_C)
+
+    create_A_plot("./plots/"*file_name*"_A_F",model_F,weatherts_F)
+    create_A_plot("./plots/"*file_name*"_A_C",model_C,weatherts_C)
+
+    create_cᵢ_plot("./plots/"*file_name*"_cᵢ_F",model_F,weatherts_F)
+    create_cᵢ_plot("./plots/"*file_name*"_cᵢ_C",model_C,weatherts_C)
 end
 
 function run_calibration(file_name::String,ranges::Array{Tuple{Float64, Float64},1},parasym::Array{Symbol,1};
