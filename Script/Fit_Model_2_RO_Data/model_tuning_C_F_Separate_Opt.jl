@@ -168,26 +168,31 @@ function run_opt_par(file_name::String,ranges::Array{Tuple{Float64, Float64},1},
 
     c = -log(0.025*2) #Use for calculating 95% credible intervals
         
-    plot(weatherts_F.date[ind],data_F.GPP[ind],label="Data",ylabel="GPP")
+    plot(weatherts_F.date[ind],data_F.GPP[ind],label="Data",ylabel="GPP",ylims=(0.0,12.0))
     plot!(weatherts_F.date[ind],model_F.GPP[ind]+c*σ_GPP_F[ind])
     plot!(weatherts_F.date[ind],model_F.GPP[ind]-c*σ_GPP_F[ind])
     pl1 = plot!(weatherts_F.date[ind],model_F.GPP[ind],label="Model")
-    plot(weatherts_C.date[ind],data_C.GPP[ind],label="Data",ylabel="GPP")
+    plot(weatherts_C.date[ind],data_C.GPP[ind],label="Data",ylabel="GPP",ylims=(0.0,12.0))
     plot!(weatherts_C.date[ind],model_C.GPP[ind]+c*σ_GPP_C[ind])
     plot!(weatherts_C.date[ind],model_C.GPP[ind]-c*σ_GPP_C[ind])
     pl2 = plot!(weatherts_C.date[ind],model_C.GPP[ind],label="Model")
 
-    plot(weatherts_F.date[ind],data_F.Ec[ind],label="Data",ylabel="E_C")
+    plot(weatherts_F.date[ind],data_F.Ec[ind],label="Data",ylabel="E_C",ylims=(0.0,3.0))
     plot!(weatherts_F.date[ind],model_F.Ec[ind]+c*σ_EC_F[ind])
     plot!(weatherts_F.date[ind],model_F.Ec[ind]-c*σ_EC_F[ind])
     pl3 = plot!(weatherts_F.date[ind],model_F.Ec[ind],label="Model")
-    plot(weatherts_C.date[ind],data_C.Ec[ind],label="Data",ylabel="E_C")
+    plot(weatherts_C.date[ind],data_C.Ec[ind],label="Data",ylabel="E_C",ylims=(0.0,3.0))
     plot!(weatherts_C.date[ind],model_C.Ec[ind]+c*σ_EC_C[ind])
     plot!(weatherts_C.date[ind],model_C.Ec[ind]-c*σ_EC_C[ind])
     pl4 = plot!(weatherts_C.date[ind],model_C.Ec[ind],label="Model")
 
     plot(pl1,pl2,pl3,pl4,layout=(2,2),legends=false)
-    savefig("./plots/"*file_name*"_result.svg")
+    savefig("./plots/"*file_name*"_result.svg")  
+    
+    savefig(pl1,"./plots/"*file_name*"_result_GPP_F.svg")
+    savefig(pl2,"./plots/"*file_name*"_result_GPP_C.svg")
+    savefig(pl3,"./plots/"*file_name*"_result_E_C_F.svg")
+    savefig(pl4,"./plots/"*file_name*"_result_E_C_C.svg")
 
     plot(weatherts_F.date[ind],data_F.gₛ[ind],label="Data",ylabel="gₛ")
     pl1 = plot!(weatherts_F.date[ind],model_F.gₛ[ind],label="Model")
@@ -253,6 +258,18 @@ function run_opt_par(file_name::String,ranges::Array{Tuple{Float64, Float64},1},
 
     create_cᵢ_plot("./plots/"*file_name*"_cᵢ_F",model_F,weatherts_F)
     create_cᵢ_plot("./plots/"*file_name*"_cᵢ_C",model_C,weatherts_C)
+
+    create_trait_plots("./plots/"*file_name*"_trait_F_C",
+    model_F,
+    weatherts_F,    
+    model_C,
+    weatherts_C)
+
+    create_wue_plot("./plots/"*file_name*"_wue_F_C",
+    model_F,
+    weatherts_F,    
+    model_C,
+    weatherts_C)
 end
 
 function run_calibration(file_name::String,ranges::Array{Tuple{Float64, Float64},1},parasym::Array{Symbol,1};

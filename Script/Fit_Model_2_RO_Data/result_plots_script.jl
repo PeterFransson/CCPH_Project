@@ -62,3 +62,72 @@ function create_trait_plots(fig_name::String,model_result::ModelResult,weatherts
     plot(model_result.gₛ,Nₘ_f,xlabel="gₛ (mol s⁻¹ m⁻²)",ylabel="Nₘ_f (%)",legends=false,seriestype=:scatter)
     savefig(fig_name*"_Nₘ_f_gₛ.svg")
 end
+
+#Optimal traits for both treatments (F and C)
+function create_trait_plots(fig_name::String,
+    model_result_F::ModelResult,
+    weatherts_F::WeatherTS,
+    model_result_C::ModelResult,
+    weatherts_C::WeatherTS)
+    
+    pl1 = plot(weatherts_F.PAR*10^6,model_result_F.gₛ,xlabel="I₀ (μmol s⁻¹ m⁻²)",ylabel="gₛ (mol s⁻¹ m⁻²)",seriestype=:scatter)
+    pl1 = plot!(weatherts_C.PAR*10^6,model_result_C.gₛ,seriestype=:scatter)
+    pl2 = plot(weatherts_F.temp,model_result_F.gₛ,xlabel="Tₐ (ᵒC)",ylabel="gₛ (mol s⁻¹ m⁻²)",seriestype=:scatter)
+    pl2 = plot!(weatherts_C.temp,model_result_C.gₛ,seriestype=:scatter)
+    pl3 = plot(weatherts_F.VPD/1000,model_result_F.gₛ,xlabel="VPD (kPa)",ylabel="gₛ (mol s⁻¹ m⁻²)",seriestype=:scatter)
+    pl3 = plot!(weatherts_C.VPD/1000,model_result_C.gₛ,seriestype=:scatter)
+    pl4 = plot(weatherts_F.θₛ*100,model_result_F.gₛ,xlabel="θ (%)",ylabel="gₛ (mol s⁻¹ m⁻²)",seriestype=:scatter)    
+    pl4 = plot!(weatherts_C.θₛ*100,model_result_C.gₛ,seriestype=:scatter)
+
+    plot(pl1,pl2,pl3,pl4,layout=4,legends=false)
+    savefig(fig_name*"_gₛ_weather.svg")
+
+    Nₘ_f = model_result_F.Nₘ_f*100    
+    pl1 = plot(weatherts_F.PAR*10^6,Nₘ_f,xlabel="I₀ (μmol s⁻¹ m⁻²)",ylabel="Nₘ_f (%)",seriestype=:scatter)
+    pl2 = plot(weatherts_F.temp,Nₘ_f,xlabel="Tₐ (ᵒC)",ylabel="Nₘ_f (%)",seriestype=:scatter)
+    pl3 = plot(weatherts_F.VPD/1000,Nₘ_f,xlabel="VPD (kPa)",ylabel="Nₘ_f (%)",seriestype=:scatter)
+    pl4 = plot(weatherts_F.θₛ*100,Nₘ_f,xlabel="θ (%)",ylabel="Nₘ_f (%)",seriestype=:scatter)    
+    
+    Nₘ_f = model_result_C.Nₘ_f*100    
+    plot!(pl1,weatherts_C.PAR*10^6,Nₘ_f,seriestype=:scatter)
+    plot!(pl2,weatherts_C.temp,Nₘ_f,seriestype=:scatter)
+    plot!(pl3,weatherts_C.VPD/1000,Nₘ_f,seriestype=:scatter)
+    plot!(pl4,weatherts_C.θₛ*100,Nₘ_f,seriestype=:scatter)
+
+    plot(pl1,pl2,pl3,pl4,layout=4,legends=false)
+    savefig(fig_name*"_Nₘ_f_weather.svg")
+
+    Nₘ_f_F = model_result_F.Nₘ_f*100
+    Nₘ_f_C = model_result_C.Nₘ_f*100 
+    plot(model_result_F.gₛ,Nₘ_f_F,xlabel="gₛ (mol s⁻¹ m⁻²)",ylabel="Nₘ_f (%)",legends=false,seriestype=:scatter)
+    plot!(model_result_C.gₛ,Nₘ_f_C,seriestype=:scatter)
+    savefig(fig_name*"_Nₘ_f_gₛ.svg")
+end
+
+#Create water use efficiency use plot for both treatments (F and C)
+function create_wue_plot(fig_name::String,
+    model_result_F::ModelResult,
+    weatherts_F::WeatherTS,
+    model_result_C::ModelResult,
+    weatherts_C::WeatherTS)    
+    
+    
+    wue = model_result_F.GPP./model_result_F.Ec*10 #kg C ha⁻¹ mm⁻¹
+    wue_mol = model_result_F.A./model_result_F.E*1000 #mmol C mol⁻¹ H₂O
+    
+    pl1 = plot(weatherts_F.PAR*10^6,wue_mol,xlabel="I₀ (μmol s⁻¹ m⁻²)",ylabel="WUE (mmol mol⁻¹)",seriestype=:scatter)
+    pl2 = plot(weatherts_F.temp,wue_mol,xlabel="Tₐ (ᵒC)",ylabel="WUE (mmol mol⁻¹)",seriestype=:scatter)
+    pl3 = plot(weatherts_F.VPD/1000,wue_mol,xlabel="VPD (kPa)",ylabel="WUE (mmol mol⁻¹)",seriestype=:scatter)
+    pl4 = plot(weatherts_F.θₛ*100,wue_mol,xlabel="θ (%)",ylabel="WUE (mmol mol⁻¹)",seriestype=:scatter)
+
+    wue = model_result_C.GPP./model_result_C.Ec*10 #kg C ha⁻¹ mm⁻¹
+    wue_mol = model_result_C.A./model_result_C.E*1000 #mmol C mol⁻¹ H₂O
+
+    plot!(pl1,weatherts_C.PAR*10^6,wue_mol,seriestype=:scatter)
+    plot!(pl2,weatherts_C.temp,wue_mol,seriestype=:scatter)
+    plot!(pl3,weatherts_C.VPD/1000,wue_mol,seriestype=:scatter)
+    plot!(pl4,weatherts_C.θₛ*100,wue_mol,seriestype=:scatter)
+
+    plot(pl1,pl2,pl3,pl4,layout=4,legends=false)
+    savefig(fig_name*".svg")
+end

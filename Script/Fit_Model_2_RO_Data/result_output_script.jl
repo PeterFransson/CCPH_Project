@@ -29,5 +29,7 @@ function create_trait_stat(file_name::String,model_result::ModelResult,weatherts
         println(io,"cor(temp,gₛ) = $(cor(weatherts.temp,gₛ))")
         println(io,"cor(VPD,gₛ) = $(cor(weatherts.VPD/1000,gₛ))")
         println(io,"cor(θₛ,gₛ) = $(cor(weatherts.θₛ*100,gₛ))")
+        println(io,"--gₛ_&_Nₘ_f--")
+        println(io,"cor(Nₘ_f,gₛ) = $(cor(Nₘ_f,gₛ))")
     end
 end
