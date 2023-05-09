@@ -404,7 +404,7 @@ function Initi_model_struct(H::T,Hc::T,N::T,Wf::T,B::T,ParaDict::Dict{Symbol,Flo
     return model,kinetic
 end
 
-function Initi_model_struct(j::Integer,data::RoData,ParaDict::Dict{Symbol,Float64}) where {T<:Float64}
+function Initi_model_struct(j::Integer,data::RoData,ParaDict::Dict{Symbol,Float64})#
     data_ind = Find_data_ind(j)
     H = data.H[data_ind]
     N = data.N[data_ind]
@@ -417,7 +417,7 @@ function Initi_model_struct(j::Integer,data::RoData,ParaDict::Dict{Symbol,Float6
 end
 
 function Run_RO_CCPH(ParaDict::Dict{Symbol,Float64},
-    weatherts::WeatherTS,data::RoData;sim_steps::Integer=84) where {T<:Float64}       
+    weatherts::WeatherTS,data::RoData;sim_steps::Integer=84)#       
 
     #Fertilized stand
     GPP_model = zeros(sim_steps)
