@@ -102,6 +102,14 @@ function create_trait_plots(fig_name::String,
     plot(model_result_F.gₛ,Nₘ_f_F,xlabel="gₛ (mol s⁻¹ m⁻²)",ylabel="Nₘ_f (%)",legends=false,seriestype=:scatter)
     plot!(model_result_C.gₛ,Nₘ_f_C,seriestype=:scatter)
     savefig(fig_name*"_Nₘ_f_gₛ.svg")
+
+    plot(weatherts_F.date,model_result_F.gₛ,ylabel="gₛ (mol s⁻¹ m⁻²)",legends=false)
+    pl1 = plot!(weatherts_C.date,model_result_C.gₛ)
+    plot(weatherts_F.date,Nₘ_f_F,ylabel="Nₘ_f (%)",legends=false)
+    pl2 = plot!(weatherts_C.date,Nₘ_f_C)
+    
+    savefig(pl1,fig_name*"_gₛ_date.svg")
+    savefig(pl2,fig_name*"_Nₘ_f_date.svg")
 end
 
 #Create water use efficiency use plot for both treatments (F and C)
