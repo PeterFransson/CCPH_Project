@@ -127,6 +127,8 @@ function create_wue_plot(fig_name::String,
     pl2 = plot(weatherts_F.temp,wue_mol,xlabel="Tₐ (ᵒC)",ylabel="WUE (mmol mol⁻¹)",seriestype=:scatter)
     pl3 = plot(weatherts_F.VPD/1000,wue_mol,xlabel="VPD (kPa)",ylabel="WUE (mmol mol⁻¹)",seriestype=:scatter)
     pl4 = plot(weatherts_F.θₛ*100,wue_mol,xlabel="θ (%)",ylabel="WUE (mmol mol⁻¹)",seriestype=:scatter)
+    pl5 = plot(model_result_F.GPP,wue_mol,xlabel="GPP (g C day⁻¹ m⁻²)",ylabel="WUE (mmol mol⁻¹)",seriestype=:scatter)
+    pl6 = plot(model_result_F.Ec,wue_mol,xlabel="Ec (mm day⁻¹)",ylabel="WUE (mmol mol⁻¹)",seriestype=:scatter)
 
     wue = model_result_C.GPP./model_result_C.Ec*10 #kg C ha⁻¹ mm⁻¹
     wue_mol = model_result_C.A./model_result_C.E*1000 #mmol C mol⁻¹ H₂O
@@ -135,7 +137,9 @@ function create_wue_plot(fig_name::String,
     plot!(pl2,weatherts_C.temp,wue_mol,seriestype=:scatter)
     plot!(pl3,weatherts_C.VPD/1000,wue_mol,seriestype=:scatter)
     plot!(pl4,weatherts_C.θₛ*100,wue_mol,seriestype=:scatter)
+    plot!(pl5,model_result_C.GPP,wue_mol,seriestype=:scatter)
+    plot!(pl6,model_result_C.Ec,wue_mol,seriestype=:scatter)
 
-    plot(pl1,pl2,pl3,pl4,layout=4,legends=false)
+    plot(pl1,pl2,pl3,pl4,pl5,pl6,layout=(3,2),legends=false)
     savefig(fig_name*".svg")
 end
