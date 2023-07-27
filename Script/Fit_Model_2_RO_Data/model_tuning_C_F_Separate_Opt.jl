@@ -26,8 +26,8 @@ function run_opt(file_name::String,
     ParaDictInit_C=nothing,
     ind::Array{Int64,1}=collect(1:84))  
 
-    #file_name_F = file_name*"_F"
-    #file_name_C = file_name*"_C"   
+    file_name_F = file_name*"_F"
+    file_name_C = file_name*"_C"   
 
     #--Fertilized--
     res = BlackBoxOptim.bboptimize(x::Array{Float64,1}->
@@ -37,9 +37,9 @@ function run_opt(file_name::String,
 
     xopt_F = BlackBoxOptim.best_candidate(res)
     log_likelihood_F = -BlackBoxOptim.best_fitness(res)  
-    #log_likelihood_fun = "$(Calc_logP)"
-    #save("./output/"*file_name_F*".jld","xopt",xopt,"log_likelihood",log_likelihood,
-    #"log_likelihood_fun",log_likelihood_fun,"parasym",parasym,"ParaDictInit_F",ParaDictInit_F)
+    log_likelihood_fun = "$(Calc_logP)"
+    save("./output/"*file_name_F*".jld","xopt",xopt,"log_likelihood",log_likelihood,
+    "log_likelihood_fun",log_likelihood_fun,"parasym",parasym,"ParaDictInit_F",ParaDictInit_F)
 
     #--Control--
     res = BlackBoxOptim.bboptimize(x::Array{Float64,1}->
@@ -49,10 +49,10 @@ function run_opt(file_name::String,
 
     xopt_C = BlackBoxOptim.best_candidate(res)
     log_likelihood_C = -BlackBoxOptim.best_fitness(res)  
-    #log_likelihood_fun = "$(Calc_logP)"
+    log_likelihood_fun = "$(Calc_logP)"
 
-    #save("./output/"*file_name_C*".jld","xopt",xopt,"log_likelihood",log_likelihood,
-    #"log_likelihood_fun",log_likelihood_fun,"parasym",parasym,"ParaDictInit_C",ParaDictInit_C)
+    save("./output/"*file_name_C*".jld","xopt",xopt,"log_likelihood",log_likelihood,
+    "log_likelihood_fun",log_likelihood_fun,"parasym",parasym,"ParaDictInit_C",ParaDictInit_C)
     return (xopt_F,log_likelihood_F,xopt_C,log_likelihood_C)
 end
 
@@ -157,6 +157,7 @@ function run_opt_par(file_name::String,ranges::Array{Tuple{Float64, Float64},1},
         end
     end    
     
+    #=
     a_GPP_F,b_GPP_F,a_Ec_F,b_Ec_F = ParaDict_F[:a_GPP],ParaDict_F[:b_GPP],ParaDict_F[:a_Ec],ParaDict_F[:b_Ec]
     a_GPP_C,b_GPP_C,a_Ec_C,b_Ec_C = ParaDict_C[:a_GPP],ParaDict_C[:b_GPP],ParaDict_C[:a_Ec],ParaDict_C[:b_Ec]
 
@@ -270,6 +271,7 @@ function run_opt_par(file_name::String,ranges::Array{Tuple{Float64, Float64},1},
     weatherts_F,    
     model_C,
     weatherts_C)
+    =#
 end
 
 function run_calibration(file_name::String,ranges::Array{Tuple{Float64, Float64},1},parasym::Array{Symbol,1};

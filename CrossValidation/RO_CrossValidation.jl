@@ -353,7 +353,7 @@ function run_CrossValidation(file_name::String,
 
     isdir("./output/"*file_name)|| mkdir("./output/"*file_name)
     isdir("./plots/"*file_name) || mkdir("./plots/"*file_name)
-    #=
+    
     Threads.@threads for ix = 1:n_runs
         file_name_save = file_name*"/"*file_name*"_$(ix)"
         ind_train,ind_val = CreateTrainnValInd(collect(1:84))        
@@ -371,10 +371,10 @@ function run_CrossValidation(file_name::String,
         ParaDictInit_C=ParaDictInit_C,
         ind=ind_train)        
     end
-    =#    
+       
     for ix = 1:n_runs
         file_name_save = file_name*"/"*file_name*"_$(ix)"        
-        #=
+        
         save_run_opt(file_name_save,
         xopt_F[ix],
         xopt_C[ix],
@@ -384,8 +384,7 @@ function run_CrossValidation(file_name::String,
         Calc_logP=Calc_logP,
         ParaDictInit_F=ParaDictInit_F,
         ParaDictInit_C=ParaDictInit_C,
-        ind=ind_train_vec[ix])
-        =#
+        ind=ind_train_vec[ix])        
         
         run_opt_par(file_name_save,
         ranges,

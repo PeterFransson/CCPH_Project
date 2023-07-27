@@ -39,12 +39,9 @@ function run_opt(file_name::String,
     
     xopt = BlackBoxOptim.best_candidate(res)
     log_likelihood = -BlackBoxOptim.best_fitness(res)
-
-    #= 
+     
     log_likelihood_fun = "$(Calc_logP)"
-    =#
-    
-    #=
+       
     save("./output/"*file_name*".jld",
     "xopt",xopt,
     "log_likelihood",log_likelihood,
@@ -52,8 +49,7 @@ function run_opt(file_name::String,
     "para2ind",para2ind,
     "ParaDictInit_F",ParaDictInit_F,
     "ParaDictInit_C",ParaDictInit_C) 
-     =#
-
+     
      return (xopt,log_likelihood)
 end
 
@@ -152,6 +148,7 @@ function run_opt_par(file_name::String,ranges::Array{Tuple{Float64, Float64},1},
         end
     end    
     
+    #=
     a_GPP_F,b_GPP_F,a_Ec_F,b_Ec_F = ParaDict_F[:a_GPP],ParaDict_F[:b_GPP],ParaDict_F[:a_Ec],ParaDict_F[:b_Ec]
     a_GPP_C,b_GPP_C,a_Ec_C,b_Ec_C = ParaDict_C[:a_GPP],ParaDict_C[:b_GPP],ParaDict_C[:a_Ec],ParaDict_C[:b_Ec]
 
@@ -238,6 +235,7 @@ function run_opt_par(file_name::String,ranges::Array{Tuple{Float64, Float64},1},
 
     create_trait_plots("./plots/"*file_name*"_trait_F",model_F,weatherts_F)
     create_trait_plots("./plots/"*file_name*"_trait_C",model_C,weatherts_C)
+    =#
 end
 
 function run_calibration(file_name::String,
