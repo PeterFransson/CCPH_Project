@@ -142,4 +142,25 @@ function create_wue_plot(fig_name::String,
 
     plot(pl1,pl2,pl3,pl4,pl5,pl6,layout=(3,2),legends=false)
     savefig(fig_name*".svg")
+
+    wue_mol_F = model_result_F.A./model_result_F.E*1000 #mmol C mol⁻¹ H₂O
+    wue_mol_E = model_result_C.A./model_result_C.E*1000 #mmol C mol⁻¹ H₂O
+    ψₛ_F = CCPH.θₛ2ψₛ.(weatherts_F.θₛ)
+    ψₛ_C = CCPH.θₛ2ψₛ.(weatherts_C.θₛ)
+    pl1 = plot(ψₛ_F,wue_mol_F,xlabel="ψₛ (MPa)",ylabel="WUE (mmol mol⁻¹)",seriestype=:scatter)
+    plot!(pl1,ψₛ_C,wue_mol_E,seriestype=:scatter) 
+
+    ψₛ_vec = range(-1,stop=-0.0001,length=300)
+    Pval_vec = CCPH.Pfun.(ψₛ_vec,Ref(-2.0),(2.0))
+    Pval_F = CCPH.Pfun.(ψₛ_F,Ref(-2.0),(2.0))
+    Pval_C = CCPH.Pfun.(ψₛ_C,Ref(-2.0),(2.0))
+    
+
+    pl2 = plot(ψₛ_F,Pval_F,ψₛ_vec,xlabel="ψₛ (MPa)",ylabel="P",seriestype=:scatter,xaxis=:flip)
+    plot!(pl2,ψₛ_C,Pval_C,seriestype=:scatter)
+    plot!(pl2,ψₛ_vec,Pval_vec)
+    plot!(pl2,[-0.3,-0.3],[first(Pval_vec),last(Pval_vec)])
+    
+    plot(pl1,pl2,layout=(1,2),legend=false)
+    savefig(fig_name*"_SP.svg")
 end
