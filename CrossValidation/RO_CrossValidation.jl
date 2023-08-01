@@ -354,7 +354,7 @@ function run_CrossValidation(file_name::String,
     isdir("./output/"*file_name)|| mkdir("./output/"*file_name)
     isdir("./plots/"*file_name) || mkdir("./plots/"*file_name)
     
-    Threads.@threads for ix = 1:n_runs
+    Threads.@threads for ix = 1:n_runs    
         file_name_save = file_name*"/"*file_name*"_$(ix)"
         ind_train,ind_val = CreateTrainnValInd(collect(1:84))        
 

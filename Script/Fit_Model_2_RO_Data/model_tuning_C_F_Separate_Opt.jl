@@ -38,8 +38,8 @@ function run_opt(file_name::String,
     xopt_F = BlackBoxOptim.best_candidate(res)
     log_likelihood_F = -BlackBoxOptim.best_fitness(res)  
     log_likelihood_fun = "$(Calc_logP)"
-    save("./output/"*file_name_F*".jld","xopt",xopt,"log_likelihood",log_likelihood,
-    "log_likelihood_fun",log_likelihood_fun,"parasym",parasym,"ParaDictInit_F",ParaDictInit_F)
+    #save("./output/"*file_name_F*".jld","xopt",xopt_F,"log_likelihood",log_likelihood_F,
+    #"log_likelihood_fun",log_likelihood_fun,"parasym",parasym,"ParaDictInit_F",ParaDictInit_F)
 
     #--Control--
     res = BlackBoxOptim.bboptimize(x::Array{Float64,1}->
@@ -51,8 +51,8 @@ function run_opt(file_name::String,
     log_likelihood_C = -BlackBoxOptim.best_fitness(res)  
     log_likelihood_fun = "$(Calc_logP)"
 
-    save("./output/"*file_name_C*".jld","xopt",xopt,"log_likelihood",log_likelihood,
-    "log_likelihood_fun",log_likelihood_fun,"parasym",parasym,"ParaDictInit_C",ParaDictInit_C)
+    #save("./output/"*file_name_C*".jld","xopt",xopt_C,"log_likelihood",log_likelihood_C,
+    #"log_likelihood_fun",log_likelihood_fun,"parasym",parasym,"ParaDictInit_C",ParaDictInit_C)
     return (xopt_F,log_likelihood_F,xopt_C,log_likelihood_C)
 end
 

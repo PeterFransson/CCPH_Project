@@ -67,12 +67,13 @@ end
 mutable struct RoData{T<:Float64}
     H::Array{T,1}
     B::Array{T,1}
-    GPP::Array{T,1}
+    GPP::Array{T,1} #Ecosystem GPP
     Wf::Array{T,1}
     N::Array{T,1}
     Hc::T
     gₛ::Array{T,1}
-    Ec::Array{T,1}
+    Ec::Array{T,1} #Canopy transpiration 
+    ζ::Array{T,1} #Scaling factor to upscale copy GPP to ecosystem GPP
 end
 
 #Create gₛ and Ec time series for Rosinedal data (ROData)  
@@ -103,6 +104,11 @@ function Create_RoData(GPP_data::Array{T,1},weatherts::CCPH.WeatherTS;
         N_data = [850.0000,846.6667,846.6667,846.6667]/10000
         Hc = 10.89
         LAI = Wf_data.*N_data/treepar.LMA
+        K_g = 0.69 #extinction coefficient for ground vegetation layer (Tian et al. 2021)
+        LAI_g = 1.0 #LAI of ground vegetation (Tian et al. 2021)
+        f_par_c = 1.0.-exp.(-treepar.k*LAI) #Fraction of above canopy light absorbed by canopy layer
+        f_par_g = (1.0.-f_par_c)*(1-exp(-K_g*LAI_g)) #Fraction of above canopy light absorbed by ground vegetation layer
+        ζ = (f_par_c+f_par_g)./f_par_c #Scaling factor to upscale copy GPP to ecosystem GPP
     elseif stand_type=="Control"
         H_data = [20.86,21.01,21.19,21.36] 
         B_data = [0.0348,0.0356,0.0362,0.0368]
@@ -110,13 +116,18 @@ function Create_RoData(GPP_data::Array{T,1},weatherts::CCPH.WeatherTS;
         N_data = [1010.0000,1010.0000,1006.6667,1006.6667]/10000
         Hc = 10.74
         LAI = Wf_data.*N_data/treepar.LMA
+        K_g = 0.69 #extinction coefficient for ground vegetation layer (Tian et al. 2021)
+        LAI_g = 0.52 #LAI of ground vegetation (Tian et al. 2021)
+        f_par_c = 1.0.-exp.(-treepar.k*LAI) #Fraction of above canopy light absorbed by canopy layer
+        f_par_g = (1.0.-f_par_c)*(1-exp(-K_g*LAI_g)) #Fraction of above canopy light absorbed by ground vegetation layer
+        ζ = (f_par_c+f_par_g)./f_par_c #Scaling factor to upscale copy GPP to ecosystem GPP
     else
         error("Create_RoData: stand_type has to be either Fertilized or Control")
     end
 
     gₛ_data,Ec_data = Create_gₛ_Ec_Data(weatherts,LAI)
 
-    data = RoData(H_data,B_data,GPP_data,Wf_data,N_data,Hc,gₛ_data,Ec_data)
+    data = RoData(H_data,B_data,GPP_data,Wf_data,N_data,Hc,gₛ_data,Ec_data,ζ)
 
     return data
 end
@@ -225,12 +236,12 @@ end
 
 #Calc model GPP
 function CalcGPP(ccphts::CCPHTS,weatherts::WeatherTS)
-    GPP = ccphts.N.*ccphts.P.*weatherts.daylight./weatherts.tot_annual_daylight*1000/7 #g C day⁻¹ m⁻² ground area
+    GPP = ccphts.N.*ccphts.P.*weatherts.daylight./weatherts.tot_annual_daylight*1000/7 #g C day⁻¹ m⁻² ground area (Canopy GPP)
 
     return GPP
 end
 function CalcGPP(step_length::Float64,model::CCPH.CCPHStruct,modeloutput::CCPH.CCPHOutput)
-    GPP = model.treesize.N*modeloutput.P*step_length*1000/7 #g C day⁻¹ m⁻² ground area
+    GPP = model.treesize.N*modeloutput.P*step_length*1000/7 #g C day⁻¹ m⁻² ground area (Canopy GPP)
 
     return GPP
 end
@@ -505,6 +516,24 @@ function Calc_logP_GPP_Nm_f(model::ModelResult,data::RoData,ParaDict::Dict{Symbo
     logP = 0.0
     for i = ind #1:length(data.GPP)
         logP += calc_logP_term(data.GPP[i],model.GPP[i],a_GPP,b_GPP)            
+        logP += abs(model.Nₘ_f[i]-μ_Nₘ_f)/b_Nₘ_f          
+    end    
+     
+    return -logP
+end
+
+function Calc_logP_GPP_Ec_Nm_f_eco_scaling(model::ModelResult,data::RoData,ParaDict::Dict{Symbol,Float64};ind::Array{Int64,1}=collect(1:84)) 
+    
+    a_GPP,b_GPP,a_Ec,b_Ec = ParaDict[:a_GPP],ParaDict[:b_GPP],ParaDict[:a_Ec],ParaDict[:b_Ec] 
+    μ_Nₘ_f,b_Nₘ_f = ParaDict[:μ_Nₘ_f],ParaDict[:b_Nₘ_f]
+
+    logP = 0.0
+    for i = ind #1:length(data.GPP)
+        i_annual = Find_data_ind(i)
+        ζ = data.ζ[i_annual]
+        GPP_eco_model = model.GPP[i]*ζ #Upscaling medel canopy GPP to ecosystem GPP
+        logP += calc_logP_term(data.GPP[i],GPP_eco_model,a_GPP,b_GPP)
+        logP += calc_logP_term(data.Ec[i],model.Ec[i],a_Ec,b_Ec)    
         logP += abs(model.Nₘ_f[i]-μ_Nₘ_f)/b_Nₘ_f          
     end    
      
