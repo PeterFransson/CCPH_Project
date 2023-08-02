@@ -631,7 +631,7 @@ function work_list()
     ParaDictInit_C=ParaDictInit_C)  
     =#
 
-    #=
+  
     #---Run non-sharing parameter case, Start---
     parasym = [:Nₛ,
     :a_Jmax,
@@ -664,7 +664,7 @@ function work_list()
     ParaDictInit_C=ParaDictInit_C,
     ParaDictInit_F=ParaDictInit_F)
     #---Run non-sharing parameter case, Done--- 
-    =#
+   
 
     #---Run sharing parameter case, Start---
     calibparavec = CalibParaVec(

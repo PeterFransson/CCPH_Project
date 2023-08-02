@@ -142,6 +142,7 @@ function create_result_plots(file_name::String,
     weatherts_C)
 end
 function run_create_result_plots(file_name::String,
+    ranges::Array{Tuple{Float64, Float64}, 1},
     parainfo::Union{Dict{Symbol,Any},Array{Symbol,1}},
     n_runs::Integer;
     ParaDictInit_F=nothing,
@@ -150,13 +151,49 @@ function run_create_result_plots(file_name::String,
     isdir("./output/"*file_name)|| mkdir("./output/"*file_name)
     isdir("./plots/"*file_name) || mkdir("./plots/"*file_name)
 
+    modeltrain_F = Array{ModelStatSum,1}(undef,n_runs)
+    modelval_F = Array{ModelStatSum,1}(undef,n_runs)
+    modeltrain_C = Array{ModelStatSum,1}(undef,n_runs)
+    modelval_C = Array{ModelStatSum,1}(undef,n_runs)
+    
     for ix = 1:n_runs
         file_name_save = file_name*"/"*file_name*"_$(ix)"
+
+        run_opt_par(file_name_save,
+        ranges,
+        parainfo;
+        ParaDictInit_F=ParaDictInit_F,
+        ParaDictInit_C=ParaDictInit_C)        
+
+        run_validation_RO(file_name_save,
+        ranges,
+        parainfo;
+        ParaDictInit_F=ParaDictInit_F,
+        ParaDictInit_C=ParaDictInit_C)
+
+        modeltrain_F[ix],modelval_F[ix],modeltrain_C[ix],modelval_C[ix] = Get_Model_Stat(file_name_save,
+        ranges,
+        parainfo;
+        ParaDictInit_F=ParaDictInit_F,
+        ParaDictInit_C=ParaDictInit_C)
 
         create_result_plots(file_name_save,
         parainfo;
         ParaDictInit_F=ParaDictInit_F,
         ParaDictInit_C=ParaDictInit_C)
     end
+
+    writestat2file(file_name*"/"*file_name,
+    modeltrain_F,
+    modelval_F,
+    modeltrain_C,
+    modelval_C)    
+    
+    CreateStatPlot(file_name*"/"*file_name,
+    n_runs,
+    modeltrain_F,
+    modelval_F,
+    modeltrain_C,
+    modelval_C)
 end
 

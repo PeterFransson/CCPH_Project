@@ -23,7 +23,7 @@ function plot_work_list()
     ParaDictInit_C=ParaDictInit_C)
     =#
 
-    #=
+    
     #---Run non-sharing parameter case, Start---
     parasym = [:Nₛ,
     :a_Jmax,
@@ -47,12 +47,13 @@ function plot_work_list()
     file_name = "RO_Opt_Separate_GPP_Ec_Nm_f_eco_scaling_20230731"
 
     run_create_result_plots(file_name,
+    ranges,
     parasym,
     10;
     ParaDictInit_F=ParaDictInit_F,
     ParaDictInit_C=ParaDictInit_C)
     #---Run non-sharing parameter case, Done---
-    =#
+    
 
     #---Run sharing parameter case, Start---
     calibparavec = CalibParaVec(
@@ -68,6 +69,7 @@ function plot_work_list()
     file_name = "RO_Opt_GPP_Ec_Nm_f_eco_scaling_20230801"
 
     run_create_result_plots(file_name,
+    ranges,
     para2ind,
     10;
     ParaDictInit_F=ParaDictInit_F,

@@ -309,7 +309,7 @@ function Est_C_assimilation(GPP_Data::T,LAI::T,N::T,weatherts::CCPH.WeatherTS,
 end
 
 mutable struct ModelResult{T<:Array{Float64,1}}
-    GPP::T  
+    GPP::T #Ecosystem GPP  
     Ec::T
     gₛ::T #stomatal conductance (mol C m⁻² leaf area s⁻¹)  
     Nₘ_f::T
@@ -431,7 +431,8 @@ function Run_RO_CCPH(ParaDict::Dict{Symbol,Float64},
     weatherts::WeatherTS,data::RoData;sim_steps::Integer=84)#       
 
     #Fertilized stand
-    GPP_model = zeros(sim_steps)
+    GPP_model = zeros(sim_steps) #Canopy GPP
+    GPP_Eco_model = zeros(sim_steps) #Ecosystem GPP
     EC_model = zeros(sim_steps)  
     Nₘ_f_model = zeros(sim_steps)
     gₛ_model = zeros(sim_steps)
@@ -445,9 +446,14 @@ function Run_RO_CCPH(ParaDict::Dict{Symbol,Float64},
         A_model[j] = modeloutput.A
         E_model[j] = modeloutput.E
         cᵢ_model[j] = modeloutput.cᵢ
+
+        #Upscaling from model canopy GPP to ecosystem GPP
+        j_annual = Find_data_ind(j)
+        ζ = data.ζ[j_annual]
+        GPP_Eco_model[j] = GPP_model[j]*ζ
     end 
     
-    modelresult = ModelResult(GPP_model,EC_model,gₛ_model,Nₘ_f_model,A_model,E_model,cᵢ_model)
+    modelresult = ModelResult(GPP_Eco_model,EC_model,gₛ_model,Nₘ_f_model,A_model,E_model,cᵢ_model)
     return modelresult
 end
 
