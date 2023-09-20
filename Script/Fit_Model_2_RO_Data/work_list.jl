@@ -652,7 +652,7 @@ function work_list()
     
     ParaDictInit_C = Dict(:μ_Nₘ_f=>0.0113,:b_Nₘ_f=>0.0018,:a_Ec=>0.0433,:b_Ec=>0.179)   
     ParaDictInit_F = Dict(:μ_Nₘ_f=>0.018,:b_Nₘ_f=>0.0018,:a_Ec=>0.0688,:b_Ec=>0.146)
-    file_name = "RO_Opt_Separate_GPP_Ec_Nm_f_eco_scaling_20230731"
+    file_name = "RO_Opt_Separate_GPP_Ec_Nm_f_eco_scaling_New_Wf_20230829"
 
     run_CrossValidation(file_name,
     10,
@@ -677,7 +677,7 @@ function work_list()
     ParaDictInit_C = Dict(:μ_Nₘ_f=>0.0113,:b_Nₘ_f=>0.0018,:a_Ec=>0.0433,:b_Ec=>0.179)   
     ParaDictInit_F = Dict(:μ_Nₘ_f=>0.018,:b_Nₘ_f=>0.0018,:a_Ec=>0.0688,:b_Ec=>0.146) 
     ranges,para2ind = CreateOptVar(calibparavec) 
-    file_name = "RO_Opt_GPP_Ec_Nm_f_eco_scaling_20230801"
+    file_name = "RO_Opt_GPP_Ec_Nm_f_eco_scaling_New_Wf_20230829"
     
     run_CrossValidation(file_name,
     10,

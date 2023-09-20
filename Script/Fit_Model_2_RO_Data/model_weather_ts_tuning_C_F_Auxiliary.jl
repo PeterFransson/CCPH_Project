@@ -100,7 +100,8 @@ function Create_RoData(GPP_data::Array{T,1},weatherts::CCPH.WeatherTS;
     if stand_type=="Fertilized"
         H_data = [19.07,19.34,19.64,19.87] 
         B_data = [0.0452,0.0467,0.0479,0.0487]
-        Wf_data = [8.33,8.47,8.49,8.48]
+        #Wf_data = [8.33,8.47,8.49,8.48] # [7.371645970070587,7.311125369357269,7.194887370531993,7.37797673100879]#Values from Hyungwoo Lim
+        Wf_data = [7.371645970070587,7.311125369357269,7.194887370531993,7.37797673100879]#New values from Hyungwoo Lim
         N_data = [850.0000,846.6667,846.6667,846.6667]/10000
         Hc = 10.89
         LAI = Wf_data.*N_data/treepar.LMA
@@ -112,7 +113,8 @@ function Create_RoData(GPP_data::Array{T,1},weatherts::CCPH.WeatherTS;
     elseif stand_type=="Control"
         H_data = [20.86,21.01,21.19,21.36] 
         B_data = [0.0348,0.0356,0.0362,0.0368]
-        Wf_data = [5.025,5.110,5.141,5.165]
+        #Wf_data = [5.025,5.110,5.141,5.165] #[5.8228417039207905,5.779420793663366,5.836566889120302,5.608429859535436]#Values from Hyungwoo Lim
+        Wf_data = [5.8228417039207905,5.779420793663366,5.836566889120302,5.608429859535436]#New values from Hyungwoo Lim
         N_data = [1010.0000,1010.0000,1006.6667,1006.6667]/10000
         Hc = 10.74
         LAI = Wf_data.*N_data/treepar.LMA
