@@ -652,7 +652,7 @@ function work_list()
     
     ParaDictInit_C = Dict(:μ_Nₘ_f=>0.0113,:b_Nₘ_f=>0.0018,:a_Ec=>0.0433,:b_Ec=>0.179)   
     ParaDictInit_F = Dict(:μ_Nₘ_f=>0.018,:b_Nₘ_f=>0.0018,:a_Ec=>0.0688,:b_Ec=>0.146)
-    file_name = "RO_Opt_Separate_GPP_Ec_Nm_f_eco_scaling_New_Wf_20230829"
+    file_name = "RO_Opt_Separate_GPP_Ec_Nm_f_eco_scaling_New_Wf_20230921"
 
     run_CrossValidation(file_name,
     10,
@@ -660,7 +660,7 @@ function work_list()
     parasym;
     PopulationSize=350,
     MaxSteps=35000,
-    Calc_logP=Calc_logP_GPP_Ec_Nm_f_eco_scaling,
+    Calc_logP=Calc_logP_GPP_Ec_Nm_f,
     ParaDictInit_C=ParaDictInit_C,
     ParaDictInit_F=ParaDictInit_F)
     #---Run non-sharing parameter case, Done--- 
@@ -677,7 +677,7 @@ function work_list()
     ParaDictInit_C = Dict(:μ_Nₘ_f=>0.0113,:b_Nₘ_f=>0.0018,:a_Ec=>0.0433,:b_Ec=>0.179)   
     ParaDictInit_F = Dict(:μ_Nₘ_f=>0.018,:b_Nₘ_f=>0.0018,:a_Ec=>0.0688,:b_Ec=>0.146) 
     ranges,para2ind = CreateOptVar(calibparavec) 
-    file_name = "RO_Opt_GPP_Ec_Nm_f_eco_scaling_New_Wf_20230829"
+    file_name = "RO_Opt_GPP_Ec_Nm_f_eco_scaling_New_Wf_20230921"
     
     run_CrossValidation(file_name,
     10,
@@ -685,7 +685,7 @@ function work_list()
     para2ind;
     PopulationSize=400,
     MaxSteps=45000,
-    Calc_logP=Calc_logP_GPP_Ec_Nm_f_eco_scaling,
+    Calc_logP=Calc_logP_GPP_Ec_Nm_f,
     ParaDictInit_C=ParaDictInit_C,
     ParaDictInit_F=ParaDictInit_F)
     #---Run sharing parameter case, Done---

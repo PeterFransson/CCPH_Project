@@ -149,7 +149,7 @@ function writestandstat(io::IO,
     println(io,"Cor:")
     writestat(io,modeltrain,modelval,Data_type,"PearsonCor")
     println(io,"")
-    println(io,"R² (tot): $(round.((GetStatArray(modeltrain,Data_type,"R²_tot")),digits=2))")
+    println(io,"R² (tot): $(round.(GetStatArray(modeltrain,Data_type,"R²_tot"),digits=2)) (Mean: $(round(mean(GetStatArray(modeltrain,Data_type,"R²_tot")),digits=2)))")
     print(io,"Mean RMSE: $(round(mean(GetStatArray(modeltrain,Data_type,"RMSE")),digits=2)) ")
     println(io,"($(round(mean(GetStatArray(modelval,Data_type,"RMSE")),digits=2)))")
     print(io,"Mean MAPE: $(round(mean(GetStatArray(modeltrain,Data_type,"MAPE")),digits=2)) ")

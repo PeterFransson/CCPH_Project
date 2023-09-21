@@ -530,6 +530,7 @@ function Calc_logP_GPP_Nm_f(model::ModelResult,data::RoData,ParaDict::Dict{Symbo
     return -logP
 end
 
+#=
 function Calc_logP_GPP_Ec_Nm_f_eco_scaling(model::ModelResult,data::RoData,ParaDict::Dict{Symbol,Float64};ind::Array{Int64,1}=collect(1:84)) 
     
     a_GPP,b_GPP,a_Ec,b_Ec = ParaDict[:a_GPP],ParaDict[:b_GPP],ParaDict[:a_Ec],ParaDict[:b_Ec] 
@@ -547,6 +548,7 @@ function Calc_logP_GPP_Ec_Nm_f_eco_scaling(model::ModelResult,data::RoData,ParaD
      
     return -logP
 end
+=#
 
 function Calc_logP_GPP(model::ModelResult,data::RoData,ParaDict::Dict{Symbol,Float64};ind::Array{Int64,1}=collect(1:84)) 
     
