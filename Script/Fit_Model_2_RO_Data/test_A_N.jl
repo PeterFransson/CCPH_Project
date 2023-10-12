@@ -5,12 +5,12 @@ function calc_A_N(Tₐ,Nₘ_f_vec)
     
     for i in eachindex(Nₘ_f_vec)
         #Parameters
-        α_max = 0.17
-        a_Jmax = 0.015
+        α_max = 0.14
+        a_Jmax = 0.011
         k = 0.52
         m = 0.05
         r_gₛ = 0.42
-        Nₛ = 0.04 #Control
+        Nₛ = 0.051 #Control
         #Traits
         gₛ = 0.1
         Nₘ_f = Nₘ_f_vec[i]
@@ -58,14 +58,22 @@ function test_A_N()
     pl1 = plot(Nₘ_f_vec*100,y_vec_5*10^6,ylabel="A-Cost (μmol s⁻¹ m⁻²)",xlabel="Nₘ_f (%)",label="5 °C")
     plot!(pl1,Nₘ_f_vec*100,y_vec_10*10^6,label="10 °C")
 
-    pl2 = plot(Nₘ_f_vec,A_vec_5,ylabel="(μmol s⁻¹ m⁻²)",xlabel="Nₘ_f (%)",label="A 5 °C")
-    plot!(pl2,Nₘ_f_vec,cost_vec_5,label="Cost 5 °C")
-    plot!(pl2,Nₘ_f_vec,A_vec_10,label="A 10 °C")
-    plot!(pl2,Nₘ_f_vec,cost_vec_10,label="Cost 10 °C")
+    pl2 = plot(Nₘ_f_vec,A_vec_5*10^6,ylabel="(μmol s⁻¹ m⁻²)",xlabel="Nₘ_f (%)",label="A 5 °C")
+    plot!(pl2,Nₘ_f_vec,cost_vec_5*10^6,label="Cost 5 °C")
+    plot!(pl2,Nₘ_f_vec,A_vec_10*10^6,label="A 10 °C")
+    plot!(pl2,Nₘ_f_vec,cost_vec_10*10^6,label="Cost 10 °C")
 
     plot(pl1,pl2,layout=(2,1))
 
     savefig("./plots/A_Cost_plot.svg")    
+
+    
+    pl3 = plot(Nₘ_f_vec*100,A_vec_5*10^6,ylabel="(μmol s⁻¹ m⁻²)",xlabel="Nₘ_f (%)",label="A 5 °C")
+    plot!(pl3,Nₘ_f_vec*100,cost_vec_5*10^6,label="Cost 5 °C")
+    plot!(pl3,Nₘ_f_vec*100,A_vec_10*10^6,label="A 10 °C")
+    plot!(pl3,Nₘ_f_vec*100,cost_vec_10*10^6,label="Cost 10 °C")
+
+    savefig(pl3,"./plots/A_Cost_plot_2.svg")    
 end
 
 test_A_N()
