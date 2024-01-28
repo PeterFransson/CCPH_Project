@@ -10,7 +10,7 @@ function calc_A_N(Tₐ,Nₘ_f_vec)
         k = 0.52
         m = 0.05
         r_gₛ = 0.42
-        Nₛ = 0.051 #Control
+        Nₛ = 0.041 #Control
         #Traits
         gₛ = 0.1
         Nₘ_f = Nₘ_f_vec[i]
