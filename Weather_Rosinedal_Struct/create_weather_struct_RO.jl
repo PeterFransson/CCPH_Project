@@ -2,7 +2,19 @@ struct RO_raw_data{T<:CSV.File}
     Weather_RO::T 
     GPP_data_RO::T
     SWC_data_RO::T 
-end    
+end 
+
+function Load_RO_weather_data(;stand_type::String="Fertilized")
+    SWC_data = CSV.read("./Data/RO_data/Daily_SWC_data_$(year).csv", DataFrames.DataFrame)
+    Weather_data = CSV.read("./Data/RO_data/Weather_data_$(year).csv", DataFrames.DataFrame)
+
+    if stand_type=="Fertilized"
+
+    elseif stand_type=="Control"
+    else           
+        error("Wrong input. Either \"Fertilized\" or \"Control\"") 
+    end
+end
 
 function Load_RO_data(;weather_file::String="Weather_RO")
     Weather_RO = CSV.File("./Data/"*weather_file*".csv")
