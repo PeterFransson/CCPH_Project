@@ -21,7 +21,7 @@ function CCPH.WeatherDataStruct(data::DataFrames.DataFrame,
     data.airTmax[data_idx]
     ,data.VP[data_idx],
     data.Radiation[data_idx]*10^6,
-    data.SWC[data_idx],
+    data.SWC[data_idx]/100,
     Cₐ,
     P)
     return data_day
