@@ -31,11 +31,9 @@ function run_test()
     Xₜ_F = Xₜ_fun.(raw_input_F,Ref(par))
 
     modeloutput = run_week.(raw_input_F,Xₜ_F,Ref(par))
-
     
     GPP_model = get_GPP_model.(modeloutput)
-    Ec_model = get_Ec_model.(modeloutput)
-   
+    Ec_model = get_Ec_model.(modeloutput)   
     
     plot([data.date for data in raw_input_F[1].weather_growth],GPP_data_F[1],linecolor=:blue)
     plot!([data.date for data in raw_input_F[1].weather_growth],GPP_model[1]*raw_input_F[1].ζ,linecolor=:red)    
@@ -43,8 +41,7 @@ function run_test()
         plot!([data.date for data in raw_input_F[i].weather_growth],GPP_data_F[i],linecolor=:blue)
         plot!([data.date for data in raw_input_F[i].weather_growth],GPP_model[i]*raw_input_F[i].ζ,linecolor=:red)
     end
-    plot!()    
-
+    pl1 = plot!()    
     
     plot([data.date for data in raw_input_F[1].weather_growth],Ec_data_F[1],linecolor=:blue)
     plot!([data.date for data in raw_input_F[1].weather_growth],Ec_model[1],linecolor=:red)    
@@ -52,7 +49,9 @@ function run_test()
         plot!([data.date for data in raw_input_F[i].weather_growth],Ec_data_F[i],linecolor=:blue)
         plot!([data.date for data in raw_input_F[i].weather_growth],Ec_model[i],linecolor=:red)
     end
-    plot!()      
+    pl2 = plot!() 
+    
+    plot(pl1,pl2,layout=(2,1),legends=false)
 end
 
 run_test()

@@ -211,8 +211,7 @@ end
 function get_Ec_model(modeloutputs::Vector{ModelOutput})
     Ec_model = Real[]
     for modeloutput in modeloutputs
-        #append!(Ec_model,[data_day.Ec for data_day in modeloutput.output_day])
-        append!(Ec_model,[modeloutput.output_weekly.Ec for data_day in 1:7])
+        append!(Ec_model,[data_day.Ec for data_day in modeloutput.output_day])        
     end
     return Ec_model
 end
