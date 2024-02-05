@@ -26,16 +26,33 @@ include("./Script/Fit_Model_2_RO_Data/run_par_fit.jl")
 function run_test()
     raw_input_F = RawInputData(;stand_type=:Fertilized)
     Ec_data_F = calc_Ec_data.(raw_input_F)
-    GPP_data_F = get_GPP_data(stand_type=:Fertilized)
-    #plot([first(data).date for data in raw_input_F[1].weather],GPP_data_F[1])
+    GPP_data_F = get_GPP_data.(raw_input_F;stand_type=:Fertilized)    
     par = ModelPar(0.013,0.14,0.011,0.00054,14.8,17.3,0.57,0.035)
     Xₜ_F = Xₜ_fun.(raw_input_F,Ref(par))
 
     modeloutput = run_week.(raw_input_F,Xₜ_F,Ref(par))
 
-    GPP_model = get_GPP_model(modeloutput[1])
+    
+    GPP_model = get_GPP_model.(modeloutput)
+    Ec_model = get_Ec_model.(modeloutput)
    
-    #plot([first(data).date for data in raw_input_F[1].weather],Xₜ_F[1])
+    
+    plot([data.date for data in raw_input_F[1].weather_growth],GPP_data_F[1],linecolor=:blue)
+    plot!([data.date for data in raw_input_F[1].weather_growth],GPP_model[1]*raw_input_F[1].ζ,linecolor=:red)    
+    for i in 2:4 
+        plot!([data.date for data in raw_input_F[i].weather_growth],GPP_data_F[i],linecolor=:blue)
+        plot!([data.date for data in raw_input_F[i].weather_growth],GPP_model[i]*raw_input_F[i].ζ,linecolor=:red)
+    end
+    plot!()    
+
+    
+    plot([data.date for data in raw_input_F[1].weather_growth],Ec_data_F[1],linecolor=:blue)
+    plot!([data.date for data in raw_input_F[1].weather_growth],Ec_model[1],linecolor=:red)    
+    for i in 2:4 
+        plot!([data.date for data in raw_input_F[i].weather_growth],Ec_data_F[i],linecolor=:blue)
+        plot!([data.date for data in raw_input_F[i].weather_growth],Ec_model[i],linecolor=:red)
+    end
+    plot!()      
 end
 
 run_test()

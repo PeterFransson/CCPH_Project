@@ -1,6 +1,8 @@
 mutable struct RawInputData
-    weather::Vector{Tuple{CCPH.WeatherDataStruct,Integer}}
-    weekly_growth_indices::Vector{Tuple{Integer,Integer}}
+    weather_raw::Vector{CCPH.WeatherDataStruct}
+    weather_growth::Vector{CCPH.WeatherDataStruct}
+    growth_indices::Tuple{Integer,Integer}
+    growth_indices_weekly::Vector{Tuple{Integer,Integer}}
     treesize::TreeSize
     ζ::Real
 end
@@ -38,7 +40,7 @@ function Load_RO_weather_data(year::Integer;stand_type::Symbol=:Fertilized)
     end
 
     n_rows =  DataFrames.nrow(Weather_data)
-    raw_data = [(CCPH.WeatherDataStruct(Weather_data,i),Weather_data.Veg[i]) for i in 1:n_rows]
+    raw_data = [CCPH.WeatherDataStruct(Weather_data,i) for i in 1:n_rows]
 
     return raw_data
 end 
@@ -52,29 +54,40 @@ function Load_RO_weather_data(;stand_type::Symbol=:Fertilized)
     return raw_data
 end
 
-function get_weekly_indices(raw_data::Vector{Tuple{CCPH.WeatherDataStruct,T}}) where {T<:Integer}
+function get_weekly_indices(raw_data::Vector{CCPH.WeatherDataStruct})
     weekly_indices = Tuple{Integer,Integer}[]
     n_days = length(raw_data)
     current_day = 1
+    growth_start_flag = false
+    growth_start = 0
+    growth_end = 0
     day_count = 0
     week_start = 0
     week_end = 0
     while current_day≤n_days
-        if last(raw_data[current_day])==1
+        if !isnan(raw_data[current_day].Radₜₒ)             
             if day_count==0
                 week_start=current_day
                 day_count+=1
+                if !growth_start_flag
+                    growth_start_flag = true
+                    growth_start = current_day
+                end
             elseif day_count==6
                 week_end=current_day
-                push!(weekly_indices,(week_start,week_end))
-                day_count=0            
+                push!(weekly_indices,(week_start-growth_start+1,week_end-growth_start+1))
+                day_count=0  
+                if growth_start_flag
+                    growth_end = current_day
+                end          
             else
                 day_count+=1
             end           
         end
         current_day+=1
     end
-    return weekly_indices
+    growth_indices = (growth_start,growth_end)
+    return weekly_indices,growth_indices
 end
 
 #Get stand size data and Scaling factor to upscale copy GPP to ecosystem GPP
@@ -116,9 +129,14 @@ end
 
 function RawInputData(year::Integer;stand_type::Symbol=:Fertilized,treepar::CCPH.TreePar=CCPH.TreePar())
     raw_weather_data = Load_RO_weather_data(year;stand_type=stand_type)
-    weekly_growth_indices = get_weekly_indices(raw_weather_data)
+    weekly_growth_indices,growth_indices = get_weekly_indices(raw_weather_data)
     treesize,ζ =  get_tree_size(year;stand_type=stand_type,treepar=treepar)
-    return RawInputData(raw_weather_data,weekly_growth_indices,treesize,ζ)
+    return RawInputData(raw_weather_data,
+    raw_weather_data[growth_indices[1]:growth_indices[2]],
+    growth_indices,
+    weekly_growth_indices,
+    treesize,
+    ζ)
 end
 function RawInputData(;stand_type::Symbol=:Fertilized,treepar::CCPH.TreePar=CCPH.TreePar())
     return [RawInputData(year;stand_type=stand_type,treepar=treepar) for year in 2015:2018]
@@ -150,15 +168,19 @@ function Xₜ_fun(Sₜ::Real,Smin::Real,ΔS::Real)
         error("Sₜ")
     end
 end
-function Xₜ_fun(raw_data::Vector{Tuple{CCPH.WeatherDataStruct,Integer}};Smin::Real = -4.0,ΔS::Real = 16.0,τ::Real =  7.0)
+function Xₜ_fun(raw_data::Vector{CCPH.WeatherDataStruct};Smin::Real = -4.0,ΔS::Real = 16.0,τ::Real =  7.0)
     #Calcualte photosynthetic temperature acclimation factor Xₜ (Mäkelä et al., 2004; Mäkelä et al., 2008). 
     #Smin = -4.0 #minium tempreture for Photosynthesis    
     #τ =  7.0 #Days
     #Smax = 16.0  
     
-    S_vec = Sₜ_fun([first(data) for data in raw_data],τ)
+    S_vec = Sₜ_fun(raw_data,τ)
     X_vec = Xₜ_fun.(S_vec,Ref(Smin),Ref(ΔS))
     return X_vec
+end
+function Xₜ_fun(raw_data::RawInputData;Smin::Real = -4.0,ΔS::Real = 16.0,τ::Real =  7.0)
+    Xₜ_raw = Xₜ_fun(raw_data.weather_raw;Smin=Smin,ΔS=ΔS,τ=τ)
+    return Xₜ_raw[raw_data.growth_indices[1]:raw_data.growth_indices[2]]
 end
 
 meanVPD(data::CCPH.WeatherDataStruct) = CCPH.VPDₜ(data.Tmean,data.VP)
@@ -190,19 +212,19 @@ function calc_Ec_data(data::CCPH.WeatherDataStruct;
 
     return calc_Ec_data(VPD_z,Sₑ;E_cm_ref=E_cm_ref,s_VPD_z=s_VPD_z,s_Sₑ=s_Sₑ)
 end
-function calc_Ec_data(data::Vector{Tuple{CCPH.WeatherDataStruct,Integer}};
+function calc_Ec_data(data::Vector{CCPH.WeatherDataStruct};
     E_cm_ref::Real=1.812,
     s_VPD_z::Real=3.121,
     s_Sₑ::Real=18.342)
 
-    return calc_Ec_data.([first(x) for x in data];E_cm_ref=E_cm_ref,s_VPD_z=s_VPD_z,s_Sₑ=s_Sₑ)
+    return calc_Ec_data.(data;E_cm_ref=E_cm_ref,s_VPD_z=s_VPD_z,s_Sₑ=s_Sₑ)
 end
 function calc_Ec_data(data::RawInputData;
     E_cm_ref::Real=1.812,
     s_VPD_z::Real=3.121,
     s_Sₑ::Real=18.342)
 
-    return calc_Ec_data(data.weather;E_cm_ref=E_cm_ref,s_VPD_z=s_VPD_z,s_Sₑ=s_Sₑ)
+    return calc_Ec_data(data.weather_growth;E_cm_ref=E_cm_ref,s_VPD_z=s_VPD_z,s_Sₑ=s_Sₑ)
 end
 
 function get_GPP_data(year::Integer;stand_type::Symbol=:Fertilized)
@@ -216,10 +238,8 @@ function get_GPP_data(year::Integer;stand_type::Symbol=:Fertilized)
         error("Wrong input. Either :Fertilized or :Control") 
     end
 end
-function get_GPP_data(;stand_type::Symbol=:Fertilized)
-    GPP_data_vec = Vector{Real}[]
-    for year = 2015:2018
-        push!(GPP_data_vec,get_GPP_data(year;stand_type=stand_type))
-    end
-    return GPP_data_vec
+function get_GPP_data(data::RawInputData;stand_type::Symbol=:Fertilized)
+    year = Dates.year(data.weather_growth[1].date)
+    GPP_raw = get_GPP_data(year;stand_type=stand_type)
+    return GPP_raw[data.growth_indices[1]:data.growth_indices[2]]
 end

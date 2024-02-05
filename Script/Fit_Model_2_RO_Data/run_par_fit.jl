@@ -4,6 +4,24 @@ mutable struct OptVal
     Nₘ_f::Real
 end
 
+mutable struct ModelPar
+    Nₛ::Real
+    α_max::Real
+    a_Jmax::Real    
+    Kₓₗ₀::Real
+    τ::Real
+    ΔS::Real
+    a_GPP::Real
+    b_GPP::Real
+end
+
+mutable struct ModelOutput
+    output_weekly::CCPH.CCPHOutput
+    optval_weekly::OptVal
+    output_day::Vector{CCPH.CCPHOutput}
+    optval_day::Vector{OptVal}
+end
+
 function get_env_from_data(data::CCPH.WeatherDataStruct)
     day_nr = CCPH.Dates.dayofyear(data.date)
     daylength = CCPH.daylighthour(data.lat*pi/180,day_nr)*3600 #Seconds
@@ -95,22 +113,8 @@ function get_model_output(Nₘ_f_opt::Real,
     return optval,output
 end
 
-mutable struct ModelPar
-    Nₛ::Real
-    α_max::Real
-    a_Jmax::Real    
-    Kₓₗ₀::Real
-    τ::Real
-    ΔS::Real
-    a_GPP::Real
-    b_GPP::Real
-end
-
-function Xₜ_fun(raw_data::Vector{Tuple{CCPH.WeatherDataStruct,Integer}},par::ModelPar;Smin::Real = -4.0)
-    return Xₜ_fun(raw_data;Smin = Smin,ΔS = par.ΔS,τ = par.τ)
-end
 function Xₜ_fun(raw_data::RawInputData,par::ModelPar;Smin::Real = -4.0)
-    return Xₜ_fun(raw_data.weather,par;Smin = Smin)
+    return Xₜ_fun(raw_data;Smin=Smin,ΔS=par.ΔS,τ=par.τ)
 end
 
 function TreePar!(treepar::CCPH.TreePar,Xₜ::Real)
@@ -155,21 +159,13 @@ function intitiate_model(data_day::CCPH.WeatherDataStruct,
     return model_day,envfun_day,daylength_day
 end
 
-mutable struct ModelOutput
-    output_weekly::CCPH.CCPHOutput
-    optval_weekly::OptVal
-    output_day::Vector{CCPH.CCPHOutput}
-    optval_day::Vector{OptVal}
-end
-
 function run_week(data_week::Vector{CCPH.WeatherDataStruct},
     Xₜ_week::Vector{Real},
     treesize::CCPH.TreeSize,
     par::ModelPar)
     
     model,envfun,daylength,kinetic,cons,treepar,treesize,hydPar = intitiate_model(data_week,Xₜ_week,treesize,par)
-
-    #Optimize weekly mean using BFGS
+    
     optval_weekly,output_weekly = get_model_output(daylength,model,kinetic,envfun)
     
     output_day_vec = Vector{CCPH.CCPHOutput}(undef,7)
@@ -178,8 +174,7 @@ function run_week(data_week::Vector{CCPH.WeatherDataStruct},
     for i = 1:7
 
         model_day,envfun_day,daylength_day = intitiate_model(data_week[i],Xₜ_week[i],kinetic,cons,treepar,treesize,hydPar)
-        
-        #Optimize daily using BFGS
+                
         optval_day,output_day = get_model_output(optval_weekly.Nₘ_f,
         optval_weekly.gₛ₁,
         optval_weekly.gₛ₂,
@@ -199,10 +194,9 @@ function run_week(input_data::RawInputData,
     Xₜ::Vector{Real},
     par::ModelPar)
 
-    treesize = input_data.treesize
-    weather = [first(data) for data in input_data.weather]
+    treesize = input_data.treesize    
 
-    modeloutput = [run_week(weather[idx[1]:idx[2]],Xₜ[idx[1]:idx[2]],treesize,par) for idx in input_data.weekly_growth_indices]
+    modeloutput = [run_week(input_data.weather_growth[idx[1]:idx[2]],Xₜ[idx[1]:idx[2]],treesize,par) for idx in input_data.growth_indices_weekly]
 
     return modeloutput
 end
@@ -210,7 +204,15 @@ end
 function get_GPP_model(modeloutputs::Vector{ModelOutput})
     GPP_model = Real[]
     for modeloutput in modeloutputs
-        append!(GPP_model,[data_day.GPP for data_day in modeloutput])
+        append!(GPP_model,[data_day.GPP for data_day in modeloutput.output_day])
     end
     return GPP_model
+end
+function get_Ec_model(modeloutputs::Vector{ModelOutput})
+    Ec_model = Real[]
+    for modeloutput in modeloutputs
+        #append!(Ec_model,[data_day.Ec for data_day in modeloutput.output_day])
+        append!(Ec_model,[modeloutput.output_weekly.Ec for data_day in 1:7])
+    end
+    return Ec_model
 end
