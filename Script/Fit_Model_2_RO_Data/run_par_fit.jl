@@ -13,6 +13,10 @@ mutable struct ModelPar
     ΔS::Real
     a_GPP::Real
     b_GPP::Real
+    μ_Nₘ_f::Real
+    b_Nₘ_f::Real
+    a_Ec::Real
+    b_Ec::Real
 end
 
 mutable struct ModelOutput
@@ -85,7 +89,14 @@ end
 
 function get_model_output(daylength::Real,model::CCPH.CCPHStruct,kinetic::CCPH.PhotoKineticRates,envfun::CCPH.EnvironmentFunStruct)
     gₛ₁_lim_hi,gₛ₂_lim_hi = CCPH.SDM2_get_gₛ_lim!(daylength,model,kinetic,envfun)     
-    gₛ₁_opt,gₛ₂_opt,Nₘ_f_opt = CCPH.CCPHOpt(daylength,kinetic,envfun,model;gₛ₁_lim_hi=gₛ₁_lim_hi,gₛ₂_lim_hi=gₛ₂_lim_hi)
+    gₛ₁_opt,gₛ₂_opt,Nₘ_f_opt = CCPH.CCPHOpt(daylength,
+    kinetic,
+    envfun,
+    model;
+    gₛ₁_lim_hi=gₛ₁_lim_hi,
+    gₛ₂_lim_hi=gₛ₂_lim_hi,
+    gₛ₁_guess=gₛ₁_lim_hi*0.9,
+    gₛ₂_guess=gₛ₂_lim_hi*0.9)
     optval = OptVal(gₛ₁_opt,gₛ₂_opt,Nₘ_f_opt)
     output = CCPH.CCPH_run!(gₛ₁_opt,gₛ₂_opt,Nₘ_f_opt,daylength,kinetic,envfun,model)
     return optval,output
@@ -214,4 +225,86 @@ function get_Ec_model(modeloutputs::Vector{ModelOutput})
         append!(Ec_model,[data_day.Ec for data_day in modeloutput.output_day])        
     end
     return Ec_model
+end
+function get_Nₘ_f_model(modeloutputs::Vector{ModelOutput})
+    Nₘ_f_model = Real[]
+    for modeloutput in modeloutputs
+        append!(Nₘ_f_model,[data_day.Nₘ_f for data_day in modeloutput.optval_day])        
+    end
+    return Nₘ_f_model
+end
+
+function ModelPar(x::Vector{T};stand_type::Symbol=:Fertilized) where {T<:Real}
+    Nₛ,α_max,a_Jmax,Kₓₗ₀,τ,ΔS,a_GPP,b_GPP = x   
+
+    if stand_type==:Fertilized
+        μ_Nₘ_f=0.02135
+        b_Nₘ_f=0.002287
+        a_Ec=0.0688
+        b_Ec=0.146        
+    elseif stand_type==:Control
+        μ_Nₘ_f=0.01195
+        b_Nₘ_f=0.002287
+        a_Ec=0.0433
+        b_Ec=0.179  
+    else
+        error("Wrong input. Either :Fertilized or :Control")
+    end
+
+    return ModelPar(Nₛ,α_max,a_Jmax,Kₓₗ₀,τ,ΔS,a_GPP,b_GPP,μ_Nₘ_f,b_Nₘ_f,a_Ec,b_Ec)
+end
+
+function calc_logP_norm_term(ydata::Real,ymodel::Real,a::Real,b::Real)
+    e = abs(ydata-ymodel)
+    σ = a+b*ymodel
+    σ>0.0||error("Negative variance")
+    return (e/σ)^2/2+log(σ)
+end
+
+function Calc_logP_GPP_Ec_Nm_f_norm(GPP_model::Vector{Vector{T}},
+    Ec_model::Vector{Vector{T}},
+    Nₘ_f_model::Vector{Vector{T}},
+    GPP_data::Vector{Vector{R}},
+    Ec_data::Vector{Vector{S}},
+    par::ModelPar,
+    raw_input::Vector{RawInputData}) where {T<:Real,R<:Real,S<:Real}
+    
+    a_GPP,b_GPP,a_Ec,b_Ec = par.a_GPP,par.b_GPP,par.a_Ec,par.b_Ec
+    μ_Nₘ_f,b_Nₘ_f = par.μ_Nₘ_f,par.b_Nₘ_f
+
+    logP = 0.0
+
+    for i in 1:4        
+        logP += sum(calc_logP_norm_term.(GPP_data[i],GPP_model[i]*raw_input[i].ζ,Ref(a_GPP),Ref(b_GPP)))
+        logP += sum(calc_logP_norm_term.(Ec_data[i],Ec_model[i],Ref(a_Ec),Ref(b_Ec)))    
+        logP += sum(abs.(Nₘ_f_model[i].-μ_Nₘ_f)/b_Nₘ_f)        
+    end   
+     
+    return -logP
+end
+
+function run_model(par::ModelPar,raw_input::Vector{RawInputData};stand_type::Symbol=:Fertilized) where {T<:Real}
+    Xₜ = Xₜ_fun.(raw_input,Ref(par))
+    modeloutput = run_week.(raw_input,Xₜ,Ref(par))    
+    GPP_model = get_GPP_model.(modeloutput)
+    Ec_model = get_Ec_model.(modeloutput)
+    Nₘ_f_model = get_Nₘ_f_model.(modeloutput)
+    return (GPP_model,Ec_model,Nₘ_f_model)
+end
+
+function opt_par_obj(x::Vector{T},
+    raw_input::Vector{RawInputData},
+    GPP_data::Vector{Vector{R}},
+    Ec_data::Vector{Vector{S}};
+    stand_type::Symbol=:Fertilized) where{T<:Real,R<:Real,S<:Real}
+
+    try
+        par = ModelPar(x;stand_type=stand_type)
+        GPP_model,Ec_model,Nₘ_f_model = run_model(par,raw_input;stand_type=stand_type)
+        return -Calc_logP_GPP_Ec_Nm_f_norm(GPP_model,Ec_model,Nₘ_f_model,GPP_data,Ec_data,par,raw_input)
+    catch err
+        println("Parameters Error: ", err)
+
+        return Inf
+    end 
 end
