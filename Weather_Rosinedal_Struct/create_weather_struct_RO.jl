@@ -19,7 +19,7 @@ function CCPH.WeatherDataStruct(data::DataFrames.DataFrame,
     data.airTmean[data_idx],
     data.airTmin[data_idx],
     data.airTmax[data_idx]
-    ,data.VP[data_idx],
+    ,data.VP[data_idx]*100,
     data.Radiation[data_idx]*10^6,
     data.SWC[data_idx]/100,
     Cₐ,

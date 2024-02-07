@@ -254,14 +254,14 @@ function ModelPar(x::Vector{T};stand_type::Symbol=:Fertilized) where {T<:Real}
     return ModelPar(Nₛ,α_max,a_Jmax,Kₓₗ₀,τ,ΔS,a_GPP,b_GPP,μ_Nₘ_f,b_Nₘ_f,a_Ec,b_Ec)
 end
 
-function calc_logP_norm_term(ydata::Real,ymodel::Real,a::Real,b::Real)
+function calc_logP_term(ydata::Real,ymodel::Real,a::Real,b::Real)
     e = abs(ydata-ymodel)
     σ = a+b*ymodel
     σ>0.0||error("Negative variance")
-    return (e/σ)^2/2+log(σ)
+    return e/σ+log(σ)
 end
 
-function Calc_logP_GPP_Ec_Nm_f_norm(GPP_model::Vector{Vector{T}},
+function Calc_logP_GPP_Ec_Nm_f(GPP_model::Vector{Vector{T}},
     Ec_model::Vector{Vector{T}},
     Nₘ_f_model::Vector{Vector{T}},
     GPP_data::Vector{Vector{R}},
@@ -275,8 +275,8 @@ function Calc_logP_GPP_Ec_Nm_f_norm(GPP_model::Vector{Vector{T}},
     logP = 0.0
 
     for i in 1:4        
-        logP += sum(calc_logP_norm_term.(GPP_data[i],GPP_model[i]*raw_input[i].ζ,Ref(a_GPP),Ref(b_GPP)))
-        logP += sum(calc_logP_norm_term.(Ec_data[i],Ec_model[i],Ref(a_Ec),Ref(b_Ec)))    
+        logP += 1.5*sum(calc_logP_term.(GPP_data[i],GPP_model[i]*raw_input[i].ζ,Ref(a_GPP),Ref(b_GPP)))
+        logP += sum(calc_logP_term.(Ec_data[i],Ec_model[i],Ref(a_Ec),Ref(b_Ec)))    
         logP += sum(abs.(Nₘ_f_model[i].-μ_Nₘ_f)/b_Nₘ_f)        
     end   
      
@@ -301,7 +301,7 @@ function opt_par_obj(x::Vector{T},
     try
         par = ModelPar(x;stand_type=stand_type)
         GPP_model,Ec_model,Nₘ_f_model = run_model(par,raw_input;stand_type=stand_type)
-        return -Calc_logP_GPP_Ec_Nm_f_norm(GPP_model,Ec_model,Nₘ_f_model,GPP_data,Ec_data,par,raw_input)
+        return -Calc_logP_GPP_Ec_Nm_f(GPP_model,Ec_model,Nₘ_f_model,GPP_data,Ec_data,par,raw_input)
     catch err
         println("Parameters Error: ", err)
 

@@ -25,18 +25,17 @@ include("./Script/Fit_Model_2_RO_Data/run_par_fit.jl")
 
 function run_opt_test()
 
-    folder_name = "test_new_opt_20240206"
+    folder_name = "test_new_opt_20240207_C_W_1_5"
     filename = "result"
 
     isdir("./output/"*folder_name)|| mkdir("./output/"*folder_name)
 
-    stand_type=:Fertilized
-    raw_input_F = RawInputData(;stand_type=stand_type)
-    Ec_data_F = calc_Ec_data.(raw_input_F)
-    GPP_data_F = get_GPP_data.(raw_input_F;stand_type=stand_type)    
+    stand_type=:Control
+    raw_input = RawInputData(;stand_type=stand_type)
+    Ec_data = calc_Ec_data.(raw_input)
+    GPP_data = get_GPP_data.(raw_input;stand_type=stand_type)    
     
     #Nₛ,α_max,a_Jmax,Kₓₗ₀,τ,ΔS,a_GPP,b_GPP = x
-
     
     range = [(0.0001,0.1),
     (0.1,0.5),
@@ -47,6 +46,7 @@ function run_opt_test()
     (0.0001,5.0),
     (0.0001,3.0)]
 
+    #=
     x0 = [0.015,
     0.13,
     0.010,
@@ -55,9 +55,7 @@ function run_opt_test()
     17.82,
     0.53,
     0.042]
-    
 
-    #=
     range = [(0.005,0.1),
     (0.1,0.3),
     (0.008,0.2),
@@ -69,9 +67,9 @@ function run_opt_test()
     =#
 
     res = BlackBoxOptim.bboptimize(x->opt_par_obj(x,
-    raw_input_F,
-    GPP_data_F,
-    Ec_data_F;
+    raw_input,
+    GPP_data,
+    Ec_data;
     stand_type=stand_type); SearchRange = range,NThreads=Threads.nthreads()-1)
     x_opt = BlackBoxOptim.best_candidate(res) 
     par_opt = ModelPar(x_opt;stand_type=stand_type)
@@ -81,39 +79,43 @@ end
 
 function draw_opt_test()
 
-    folder_name = "test_new_opt_20240206"
+    folder_name = "test_new_opt_20240207_F_W_1_5"
     filename = "result"
     
     stand_type = JLD.load("output/"*folder_name*"/"*filename*".jld","stand_type")
 
-    raw_input_F = RawInputData(;stand_type=stand_type)
-    Ec_data_F = calc_Ec_data.(raw_input_F)
-    GPP_data_F = get_GPP_data.(raw_input_F;stand_type=stand_type)  
+    raw_input = RawInputData(;stand_type=stand_type)
+    Ec_data = calc_Ec_data.(raw_input)
+    GPP_data = get_GPP_data.(raw_input;stand_type=stand_type)  
 
     #Load opt val 
-    x_opt = JLD.load("output/"*folder_name*"/"*filename*".jld","x_opt")
-
+    x_opt = JLD.load("output/"*folder_name*"/"*filename*".jld","x_opt")   
+        
     par = ModelPar(x_opt;stand_type=stand_type)
 
-    GPP_model,Ec_model,Nₘ_f_model = run_model(par,raw_input_F;stand_type=stand_type)
+    GPP_model,Ec_model,Nₘ_f_model = run_model(par,raw_input;stand_type=stand_type)
     
-    plot([data.date for data in raw_input_F[1].weather_growth],GPP_data_F[1],linecolor=:blue)
-    plot!([data.date for data in raw_input_F[1].weather_growth],GPP_model[1]*raw_input_F[1].ζ,linecolor=:red)    
+    plot([data.date for data in raw_input[1].weather_growth],GPP_data[1],linecolor=:blue)
+    plot!([data.date for data in raw_input[1].weather_growth],GPP_model[1]*raw_input[1].ζ,linecolor=:red) 
+       
     for i in 2:4 
-        plot!([data.date for data in raw_input_F[i].weather_growth],GPP_data_F[i],linecolor=:blue)
-        plot!([data.date for data in raw_input_F[i].weather_growth],GPP_model[i]*raw_input_F[i].ζ,linecolor=:red)
+        plot!([data.date for data in raw_input[i].weather_growth],GPP_data[i],linecolor=:blue)
+        plot!([data.date for data in raw_input[i].weather_growth],GPP_model[i]*raw_input[i].ζ,linecolor=:red)
     end
+    
     pl1 = plot!()    
     
-    plot([data.date for data in raw_input_F[1].weather_growth],Ec_data_F[1],linecolor=:blue)
-    plot!([data.date for data in raw_input_F[1].weather_growth],Ec_model[1],linecolor=:red)    
+    plot([data.date for data in raw_input[1].weather_growth],Ec_data[1],linecolor=:blue)
+    plot!([data.date for data in raw_input[1].weather_growth],Ec_model[1],linecolor=:red) 
+      
     for i in 2:4 
-        plot!([data.date for data in raw_input_F[i].weather_growth],Ec_data_F[i],linecolor=:blue)
-        plot!([data.date for data in raw_input_F[i].weather_growth],Ec_model[i],linecolor=:red)
+        plot!([data.date for data in raw_input[i].weather_growth],Ec_data[i],linecolor=:blue)
+        plot!([data.date for data in raw_input[i].weather_growth],Ec_model[i],linecolor=:red)
     end
+    
     pl2 = plot!() 
     
     plot(pl1,pl2,layout=(2,1),legends=false)
 end
-run_opt_test()
+#run_opt_test()
 draw_opt_test()
