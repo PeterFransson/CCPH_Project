@@ -267,7 +267,8 @@ function Calc_logP_GPP_Ec_Nm_f(GPP_model::Vector{Vector{T}},
     GPP_data::Vector{Vector{R}},
     Ec_data::Vector{Vector{S}},
     par::ModelPar,
-    raw_input::Vector{RawInputData}) where {T<:Real,R<:Real,S<:Real}
+    raw_input::Vector{RawInputData};
+    weight_GPP::Real=1.0) where {T<:Real,R<:Real,S<:Real}
     
     a_GPP,b_GPP,a_Ec,b_Ec = par.a_GPP,par.b_GPP,par.a_Ec,par.b_Ec
     μ_Nₘ_f,b_Nₘ_f = par.μ_Nₘ_f,par.b_Nₘ_f
@@ -275,7 +276,7 @@ function Calc_logP_GPP_Ec_Nm_f(GPP_model::Vector{Vector{T}},
     logP = 0.0
 
     for i in 1:4        
-        logP += 1.5*sum(calc_logP_term.(GPP_data[i],GPP_model[i]*raw_input[i].ζ,Ref(a_GPP),Ref(b_GPP)))
+        logP += weight_GPP*sum(calc_logP_term.(GPP_data[i],GPP_model[i]*raw_input[i].ζ,Ref(a_GPP),Ref(b_GPP)))
         logP += sum(calc_logP_term.(Ec_data[i],Ec_model[i],Ref(a_Ec),Ref(b_Ec)))    
         logP += sum(abs.(Nₘ_f_model[i].-μ_Nₘ_f)/b_Nₘ_f)        
     end   
@@ -296,15 +297,135 @@ function opt_par_obj(x::Vector{T},
     raw_input::Vector{RawInputData},
     GPP_data::Vector{Vector{R}},
     Ec_data::Vector{Vector{S}};
-    stand_type::Symbol=:Fertilized) where{T<:Real,R<:Real,S<:Real}
+    stand_type::Symbol=:Fertilized,
+    weight_GPP::Real=1.0) where{T<:Real,R<:Real,S<:Real}
 
     try
         par = ModelPar(x;stand_type=stand_type)
         GPP_model,Ec_model,Nₘ_f_model = run_model(par,raw_input;stand_type=stand_type)
-        return -Calc_logP_GPP_Ec_Nm_f(GPP_model,Ec_model,Nₘ_f_model,GPP_data,Ec_data,par,raw_input)
+        return -Calc_logP_GPP_Ec_Nm_f(GPP_model,Ec_model,Nₘ_f_model,GPP_data,Ec_data,par,raw_input;weight_GPP=weight_GPP)
     catch err
         println("Parameters Error: ", err)
 
         return Inf
     end 
+end
+
+function calc_RMSE(y_data::Vector{Vector{T}},y_model::Vector{Vector{R}}) where {T<:Real,R<:Real}
+    n_years = length(y_data)
+    n_years == length(y_model)||error("length(y_data)!=length(y_model)")
+    sum_temp = 0.0
+    n_point = 0
+    for year_idx in 1:n_years 
+        n_days = length(y_data[year_idx])
+        n_days == length(y_model[year_idx])||error("length(y_data[$(year_idx)])!=length(y_model[$(year_idx)])")
+        sum_temp += sum((y_data[year_idx]-y_model[year_idx]).^2)
+        n_point += n_days
+    end
+    return sqrt(sum_temp/n_point)
+end
+
+function calc_MAPE(y_data::Vector{Vector{T}},y_model::Vector{Vector{R}}) where {T<:Real,R<:Real}
+    n_years = length(y_data)
+    n_years == length(y_model)||error("length(y_data)!=length(y_model)")
+    sum_temp = 0.0
+    n_point = 0
+    for year_idx in 1:n_years 
+        n_days = length(y_data[year_idx])
+        n_days == length(y_model[year_idx])||error("length(y_data[$(year_idx)])!=length(y_model[$(year_idx)])")
+        sum_temp += sum(abs.((y_data[year_idx]-y_model[year_idx])./y_data[year_idx]))
+        n_point += n_days
+    end
+    return 100*sum_temp/n_point
+end
+
+function calc_R2(y_data::Vector{Vector{T}},y_model::Vector{Vector{R}}) where {T<:Real,R<:Real}
+    n_years = length(y_data)
+    n_years == length(y_model)||error("length(y_data)!=length(y_model)")
+
+    sum_temp = 0.0
+    n_point = 0
+    for year_idx in 1:n_years 
+        n_days = length(y_data[year_idx])
+        sum_temp += sum(y_data[year_idx])
+        n_point += n_days
+    end
+    y_data_mean = sum_temp/n_point
+
+    sum₁_temp = 0.0
+    sum₂_temp = 0.0
+    n_point = 0
+    for year_idx in 1:n_years 
+        n_days = length(y_data[year_idx])
+        n_days == length(y_model[year_idx])||error("length(y_data[$(year_idx)])!=length(y_model[$(year_idx)])")
+        sum₁_temp += sum((y_data[year_idx]-y_model[year_idx]).^2)
+        sum₂_temp += sum((y_data[year_idx].-y_data_mean).^2)
+    end
+    return 1-sum₁_temp/sum₂_temp
+end
+
+function calc_cor(y_data::Vector{Vector{T}},y_model::Vector{Vector{R}}) where {T<:Real,R<:Real}
+    n_years = length(y_data)
+    n_years == length(y_model)||error("length(y_data)!=length(y_model)")
+    
+    sum_data_temp = 0.0
+    sum_model_temp = 0.0
+    sum_prod_temp = 0.0
+    n_point = 0
+    for year_idx in 1:n_years         
+        n_days = length(y_data[year_idx])
+        n_days == length(y_model[year_idx])||error("length(y_data[$(year_idx)])!=length(y_model[$(year_idx)])")
+        sum_data_temp += sum(y_data[year_idx])
+        sum_model_temp += sum(y_model[year_idx])
+        sum_prod_temp += sum(y_data[year_idx].*y_model[year_idx])
+        n_point += n_days
+    end
+
+    E_data = sum_data_temp/n_point
+    E_model = sum_model_temp/n_point
+    E_prod = sum_prod_temp/n_point
+    cov_data_model = E_prod-E_data*E_model
+
+    sum_data_temp = 0.0
+    sum_model_temp = 0.0
+    n_point = 0
+    for year_idx in 1:n_years 
+        n_days = length(y_data[year_idx])
+        sum_data_temp += sum((y_data[year_idx].-E_data).^2)
+        sum_model_temp += sum((y_model[year_idx].-E_model).^2)
+        n_point += n_days
+    end
+
+    σ_data = sqrt(sum_data_temp/(n_point-1))
+    σ_model = sqrt(sum_model_temp/(n_point-1))
+
+    return cov_data_model/(σ_data*σ_model)
+end
+
+function get_sum_stat(y_data::Vector{Vector{T}},y_model::Vector{Vector{R}}) where {T<:Real,R<:Real}
+    return (calc_R2(y_data,y_model),calc_RMSE(y_data,y_model),calc_MAPE(y_data,y_model),calc_cor(y_data,y_model))       
+end
+
+function CreateTrainValSet(raw_input::Vector{RawInputData};
+    val_prop::Float64=0.2)
+
+    n_years = length(raw_input)
+    @show n_weeks = [length(input.growth_indices_weekly) for input in raw_input]    
+
+    train_set = [ones(Bool,week) for week in n_weeks]
+    val_set = [zeros(Bool,week) for week in n_weeks]
+
+    total_set = [(year_idx,week_idx) for year_idx in 1:n_years for week_idx in 1:n_weeks[year_idx]]
+
+    sum(n_weeks)==length(total_set)||errro("sum(n_weeks)!=length(total_set)")
+
+    n_val = round(Int,sum(n_weeks)*val_prop)
+    val_idx = sort(shuffle(total_set)[1:n_val])
+
+    for idx in val_idx 
+        train_set[idx[1]][idx[2]] = false
+        val_set[idx[1]][idx[2]] = true
+    end
+    
+    return (train_set,val_set)
 end
