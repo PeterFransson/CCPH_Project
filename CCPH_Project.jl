@@ -180,9 +180,10 @@ function test_train_val()
     @show raw_input[3].growth_indices_weekly
     @show raw_input[4].growth_indices_weekly
      
-    (train_set,val_set) = CreateTrainValSet(raw_input)  
-    
-    [raw_input[i].growth_indices_weekly[val_set[i]] for i in 1:4]    
+    (train_set,val_set) = CreateTrainValSet(raw_input) 
+        
+    [GPP_data[i][train_set[i]] for i in 1:4]   
+    [GPP_data[i][val_set[i]] for i in 1:4]
 end
 
 test_train_val()

@@ -284,7 +284,7 @@ function Calc_logP_GPP_Ec_Nm_f(GPP_model::Vector{Vector{T}},
     return -logP
 end
 
-function run_model(par::ModelPar,raw_input::Vector{RawInputData};stand_type::Symbol=:Fertilized) where {T<:Real}
+function run_model(par::ModelPar,raw_input::Vector{RawInputData};stand_type::Symbol=:Fertilized)
     Xₜ = Xₜ_fun.(raw_input,Ref(par))
     modeloutput = run_week.(raw_input,Xₜ,Ref(par))    
     GPP_model = get_GPP_model.(modeloutput)
@@ -412,8 +412,8 @@ function CreateTrainValSet(raw_input::Vector{RawInputData};
     n_years = length(raw_input)
     @show n_weeks = [length(input.growth_indices_weekly) for input in raw_input]    
 
-    train_set = [ones(Bool,week) for week in n_weeks]
-    val_set = [zeros(Bool,week) for week in n_weeks]
+    train_set = [ones(Bool,week*7) for week in n_weeks]
+    val_set = [zeros(Bool,week*7) for week in n_weeks]
 
     total_set = [(year_idx,week_idx) for year_idx in 1:n_years for week_idx in 1:n_weeks[year_idx]]
 
@@ -423,8 +423,11 @@ function CreateTrainValSet(raw_input::Vector{RawInputData};
     val_idx = sort(shuffle(total_set)[1:n_val])
 
     for idx in val_idx 
-        train_set[idx[1]][idx[2]] = false
-        val_set[idx[1]][idx[2]] = true
+
+        start_idx,end_idx = raw_input[idx[1]].growth_indices_weekly[idx[2]]
+
+        train_set[idx[1]][start_idx:end_idx] .= false
+        val_set[idx[1]][start_idx:end_idx] .= true
     end
     
     return (train_set,val_set)
