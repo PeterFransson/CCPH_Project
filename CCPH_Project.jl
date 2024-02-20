@@ -22,6 +22,7 @@ include("Script/Fit_Model_2_RO_Data/plot_work_list.jl")
 
 include("./Weather_Rosinedal_Struct/create_weather_struct_RO.jl")
 include("./Script/Fit_Model_2_RO_Data/run_par_fit.jl")
+include("Script/Test_static_N/test_static_N.jl")
 
 function run_opt_test(folder_name::String,stand_type::Symbol,weight_GPP::Real)
 
@@ -138,6 +139,7 @@ function draw_opt_test(folder_name::String)
 end
 
 function run_work_list()
+    #=
     run_opt_test("test_new_opt_20240207_F_W_1_0",:Fertilized,1.0)
     run_opt_test("test_new_opt_20240207_C_W_1_0",:Control,1.0)
 
@@ -146,6 +148,10 @@ function run_work_list()
 
     run_opt_test("test_new_opt_20240207_F_W_1_7",:Fertilized,1.7)
     run_opt_test("test_new_opt_20240207_C_W_1_7",:Control,1.7)
+    =#
+
+    run_opt_test("test_new_opt_20240207_F_W_1_5",:Fertilized,1.5)
+    run_opt_test("test_new_opt_20240207_C_W_1_5",:Control,1.5)
 end
 
 function run_draw_work_list()
@@ -161,6 +167,12 @@ function run_draw_work_list()
     draw_opt_test("test_new_opt_20240207_F_W_1_3")
     println("--Control")
     draw_opt_test("test_new_opt_20240207_C_W_1_3")
+
+    println("--Weight: 1.5--")
+    println("--Fetrilized")
+    draw_opt_test("test_new_opt_20240207_F_W_1_5")
+    println("--Control")
+    draw_opt_test("test_new_opt_20240207_C_W_1_5")
    
     println("--Weight: 1.7--")
     println("--Fetrilized")
@@ -186,10 +198,11 @@ function test_train_val()
     GPP_data_val = [GPP_data[i][val_set[i]] for i in 1:4]      
 end
 
-test_train_val()
+#test_train_val()
 
 #run_work_list()
 #run_draw_work_list()
 #draw_opt_test("test_new_opt_20240207_C_W_1_7")
 #run_opt_test()
 #draw_opt_test()
+test_static_N()
