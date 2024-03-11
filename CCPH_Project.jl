@@ -22,7 +22,8 @@ include("Script/Fit_Model_2_RO_Data/plot_work_list.jl")
 
 include("./Weather_Rosinedal_Struct/create_weather_struct_RO.jl")
 include("./Script/Fit_Model_2_RO_Data/run_par_fit.jl")
-include("Script/Test_static_N/test_static_N.jl")
+include("./Script/Fit_Model_2_RO_Data/run_crossval.jl")
+#include("Script/Test_static_N/test_static_N.jl")
 
 function run_opt_test(folder_name::String,stand_type::Symbol,weight_GPP::Real)
 
@@ -36,38 +37,15 @@ function run_opt_test(folder_name::String,stand_type::Symbol,weight_GPP::Real)
     Ec_data = calc_Ec_data.(raw_input)
     GPP_data = get_GPP_data.(raw_input;stand_type=stand_type)    
     
-    #Nₛ,α_max,a_Jmax,Kₓₗ₀,τ,ΔS,a_GPP,b_GPP = x
-    
+    #Nₛ,α_max,a_Jmax,Kₓₗ₀,τ,ΔS,a_GPP,b_GPP = x    
     range = [(0.0001,0.1),
     (0.1,0.5),
-    (0.01,1.0),
+    (0.001,1.0),
     (0.0004,0.1),
     (1.0,15.0),
     (10.0,25.0),
     (0.0001,5.0),
-    (0.0001,3.0)]
-
-    #=
-    x0 = [0.015,
-    0.13,
-    0.010,
-    0.00059,
-    14.6,
-    17.82,
-    0.53,
-    0.042]
-
-    range = [(0.005,0.1),
-    (0.1,0.3),
-    (0.008,0.2),
-    (0.0004,0.001),
-    (7.0,15.0),
-    (10.0,25.0),
-    (0.0001,5.0),
-    (0.0001,3.0)]
-    =#
-
-    #weight_GPP = 1.5
+    (0.0001,3.0)]      
 
     res = BlackBoxOptim.bboptimize(x->opt_par_obj(x,
     raw_input,
@@ -195,8 +173,16 @@ function test_train_val()
     (train_set,val_set,train_set_weekly,val_set_weekly) = CreateTrainValSet(raw_input) 
         
     GPP_data_train = [GPP_data[i][train_set[i]] for i in 1:4]   
-    GPP_data_val = [GPP_data[i][val_set[i]] for i in 1:4]      
+    GPP_data_val = [GPP_data[i][val_set[i]] for i in 1:4]     
 end
+
+function run_get_data_work_list()  
+    fld = "crossval_20240306_C_W_1_5_run"
+    for i = 1:10
+        println("----Run_$(i)---")
+        get_sum_stat(fld*"_$(i)","result")        
+    end
+end   
 
 #test_train_val()
 
@@ -205,4 +191,6 @@ end
 #draw_opt_test("test_new_opt_20240207_C_W_1_7")
 #run_opt_test()
 #draw_opt_test()
-test_static_N()
+#test_static_N()
+#run_crossval_work_list()
+run_get_data_work_list() 

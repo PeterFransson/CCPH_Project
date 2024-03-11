@@ -311,59 +311,6 @@ function opt_par_obj(x::Vector{T},
     end 
 end
 
-function opt_par_obj(x::Vector{T},
-    raw_input::Vector{RawInputData},
-    GPP_data::Vector{Vector{R}},
-    Ec_data::Vector{Vector{S}},
-    train_set::Vector{Vector{Bool}};
-    stand_type::Symbol=:Fertilized,
-    weight_GPP::Real=1.0) where{T<:Real,R<:Real,S<:Real}
-
-    try
-        par = ModelPar(x;stand_type=stand_type)
-        GPP_model,Ec_model,Nₘ_f_model = run_model(par,raw_input;stand_type=stand_type)
-
-        return -Calc_logP_GPP_Ec_Nm_f(GPP_model,Ec_model,Nₘ_f_model,GPP_data,Ec_data,par,raw_input;weight_GPP=weight_GPP)
-    catch err
-        println("Parameters Error: ", err)
-
-        return Inf
-    end 
-end
-
-function CreateTrainValSet(raw_input::Vector{RawInputData};
-    val_prop::Float64=0.2)
-
-    n_years = length(raw_input)
-    @show n_weeks = [length(input.growth_indices_weekly) for input in raw_input]    
-
-    train_set = [ones(Bool,week*7) for week in n_weeks]
-    val_set = [zeros(Bool,week*7) for week in n_weeks]
-
-    train_set_weekly = [ones(Bool,week) for week in n_weeks]
-    val_set_weekly = [zeros(Bool,week) for week in n_weeks]
-
-    total_set = [(year_idx,week_idx) for year_idx in 1:n_years for week_idx in 1:n_weeks[year_idx]]
-  
-    sum(n_weeks)==length(total_set)||error("sum(n_weeks)!=length(total_set)")
-
-    n_val = round(Int,sum(n_weeks)*val_prop)
-    val_idx = sort(shuffle(total_set)[1:n_val])    
-
-    for idx in val_idx 
-
-        start_idx,end_idx = raw_input[idx[1]].growth_indices_weekly[idx[2]]
-
-        train_set_weekly[idx[1]][idx[2]] = false
-        val_set_weekly[idx[1]][idx[2]] = true
-
-        train_set[idx[1]][start_idx:end_idx] .= false
-        val_set[idx[1]][start_idx:end_idx] .= true
-    end
-    
-    return (train_set,val_set,train_set_weekly,val_set_weekly)
-end
-
 function calc_RMSE(y_data::Vector{Vector{T}},y_model::Vector{Vector{R}}) where {T<:Real,R<:Real}
     n_years = length(y_data)
     n_years == length(y_model)||error("length(y_data)!=length(y_model)")
@@ -457,4 +404,31 @@ end
 
 function get_sum_stat(y_data::Vector{Vector{T}},y_model::Vector{Vector{R}}) where {T<:Real,R<:Real}
     return (calc_R2(y_data,y_model),calc_RMSE(y_data,y_model),calc_MAPE(y_data,y_model),calc_cor(y_data,y_model))       
+end
+
+function get_sum_stat(folder_name::String,filename::String)   
+    
+    stand_type = JLD.load("output/"*folder_name*"/"*filename*".jld","stand_type")
+    weight_GPP = JLD.load("output/"*folder_name*"/"*filename*".jld","weight_GPP")
+
+    raw_input = RawInputData(;stand_type=stand_type)
+    Ec_data = calc_Ec_data.(raw_input)
+    GPP_data = get_GPP_data.(raw_input;stand_type=stand_type) 
+
+    #Load opt val 
+    x_opt = JLD.load("output/"*folder_name*"/"*filename*".jld","x_opt")   
+        
+    par = ModelPar(x_opt;stand_type=stand_type)
+
+    GPP_model,Ec_model,Nₘ_f_model = run_model(par,raw_input;stand_type=stand_type)
+
+    log_L = Calc_logP_GPP_Ec_Nm_f(GPP_model,Ec_model,Nₘ_f_model,GPP_data,Ec_data,par,raw_input;weight_GPP=weight_GPP)
+
+    GPP_R2,GPP_RMSE,GPP_MAPE,GPP_cor = get_sum_stat(GPP_data,GPP_model)
+    Ec_R2,Ec_RMSE,Ec_MAPE,Ec_cor = get_sum_stat(Ec_data,Ec_model)
+
+    println("GPP: R²:$(round(GPP_R2, digits=2)), RMSE:$(round(GPP_RMSE, digits=2)), MAPE:$(round(GPP_MAPE, digits=2)), corr:$(round(GPP_cor, digits=2))")
+    println("Ec: R²:$(round(Ec_R2, digits=2)), RMSE:$(round(Ec_RMSE, digits=2)), MAPE:$(round(Ec_MAPE, digits=2)), corr:$(round(Ec_cor, digits=2))")
+    println("Log-likelihood: $(round(log_L, digits=2))")
+    return nothing
 end
