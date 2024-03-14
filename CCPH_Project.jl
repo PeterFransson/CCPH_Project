@@ -24,6 +24,7 @@ include("./Weather_Rosinedal_Struct/create_weather_struct_RO.jl")
 include("./Script/Fit_Model_2_RO_Data/run_par_fit.jl")
 include("./Script/Fit_Model_2_RO_Data/run_crossval.jl")
 include("./Script/paper_results/weather_plot.jl")
+include("./Script/paper_results/model_data.jl")
 #include("Script/Test_static_N/test_static_N.jl")
 
 function run_opt_test(folder_name::String,stand_type::Symbol,weight_GPP::Real)
@@ -178,10 +179,11 @@ function test_train_val()
 end
 
 function run_get_data_work_list()  
-    fld = "crossval_20240306_C_W_1_5_run"
+    fld = "crossval_20240306_shared_W_1_5_run"
     for i = 1:10
         println("----Run_$(i)---")
-        get_sum_stat(fld*"_$(i)","result")        
+        get_sum_stat(fld*"_$(i)","result_F")      
+        get_sum_stat(fld*"_$(i)","result_C")     
     end
 end   
 
@@ -195,4 +197,5 @@ end
 #test_static_N()
 #run_crossval_work_list()
 #run_get_data_work_list() 
-create_weather_plot()
+#create_weather_plot()
+draw_shared_model()
