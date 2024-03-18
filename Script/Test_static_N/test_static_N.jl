@@ -52,22 +52,22 @@ function run_model(par::ModelPar,raw_input::Vector{RawInputData},mean_Nₘ_f::Re
 end
 
 function test_static_N()
+    fld = "crossval_20240306_shared_W_1_5_run_4"
+    
     #--Fertilized--
     println("--Fertilized--")
-    stand_type = :Fertilized
+    stand_type = JLD.load("output/"*fld*"/result_F.jld","stand_type")
+    x_opt = JLD.load("output/"*fld*"/result_F.jld","x_opt")  
 
     raw_input = RawInputData(;stand_type=stand_type)
     Ec_data = calc_Ec_data.(raw_input)
-    GPP_data = get_GPP_data.(raw_input;stand_type=stand_type)  
-
-    #Opt val Fertilized with 1.7 GPP wieght
-    x_opt = [0.008847524418722476, 0.1858354660639916, 0.013154305293591476, 0.0005337994760851501, 14.991879349040081, 18.450978731282667, 0.4794490786118498, 0.06529308789575244]
-        
+    GPP_data = get_GPP_data.(raw_input;stand_type=stand_type) 
+   
     par = ModelPar(x_opt;stand_type=stand_type)
 
     GPP_model,Ec_model,Nₘ_f_model = run_model(par,raw_input;stand_type=stand_type)
 
-    GPP_R2,GPP_RMSE,GPP_MAPE,GPP_cor = get_sum_stat(GPP_data,GPP_model)
+    GPP_R2,GPP_RMSE,GPP_MAPE,GPP_cor = get_sum_stat(GPP_data,[GPP_model[i]*raw_input[i].ζ for i in 1:4])
     Ec_R2,Ec_RMSE,Ec_MAPE,Ec_cor = get_sum_stat(Ec_data,Ec_model)
 
     println("--Dynamic Nₘ_f")
@@ -78,7 +78,7 @@ function test_static_N()
 
     GPP_model,Ec_model,Nₘ_f_model = run_model(par,raw_input,mean_Nₘ_f;stand_type=stand_type)
 
-    GPP_R2,GPP_RMSE,GPP_MAPE,GPP_cor = get_sum_stat(GPP_data,GPP_model)
+    GPP_R2,GPP_RMSE,GPP_MAPE,GPP_cor = get_sum_stat(GPP_data,[GPP_model[i]*raw_input[i].ζ for i in 1:4])
     Ec_R2,Ec_RMSE,Ec_MAPE,Ec_cor = get_sum_stat(Ec_data,Ec_model)
 
     println("--Static Nₘ_f")
@@ -87,20 +87,18 @@ function test_static_N()
     
     #--Control--
     println("--Control--")
-    stand_type = :Control
+    stand_type = JLD.load("output/"*fld*"/result_C.jld","stand_type")
+    x_opt = JLD.load("output/"*fld*"/result_C.jld","x_opt")  
 
     raw_input = RawInputData(;stand_type=stand_type)
     Ec_data = calc_Ec_data.(raw_input)
-    GPP_data = get_GPP_data.(raw_input;stand_type=stand_type)  
-
-    #Opt val Control with 1.7 GPP wieght
-    x_opt = [0.01052584208102377, 0.17703713445290922, 0.020755459544865226, 0.0005883851392024222, 14.9876768016537, 18.43146991665358, 0.5281482186620281, 0.038915610518832015]
-        
+    GPP_data = get_GPP_data.(raw_input;stand_type=stand_type) 
+    
     par = ModelPar(x_opt;stand_type=stand_type)
 
     GPP_model,Ec_model,Nₘ_f_model = run_model(par,raw_input;stand_type=stand_type)
 
-    GPP_R2,GPP_RMSE,GPP_MAPE,GPP_cor = get_sum_stat(GPP_data,GPP_model)
+    GPP_R2,GPP_RMSE,GPP_MAPE,GPP_cor = get_sum_stat(GPP_data,[GPP_model[i]*raw_input[i].ζ for i in 1:4])
     Ec_R2,Ec_RMSE,Ec_MAPE,Ec_cor = get_sum_stat(Ec_data,Ec_model)
 
     println("--Dynamic Nₘ_f")
@@ -111,7 +109,7 @@ function test_static_N()
 
     GPP_model,Ec_model,Nₘ_f_model = run_model(par,raw_input,mean_Nₘ_f;stand_type=stand_type)
 
-    GPP_R2,GPP_RMSE,GPP_MAPE,GPP_cor = get_sum_stat(GPP_data,GPP_model)
+    GPP_R2,GPP_RMSE,GPP_MAPE,GPP_cor = get_sum_stat(GPP_data,[GPP_model[i]*raw_input[i].ζ for i in 1:4])
     Ec_R2,Ec_RMSE,Ec_MAPE,Ec_cor = get_sum_stat(Ec_data,Ec_model)
 
     println("--Static Nₘ_f")
