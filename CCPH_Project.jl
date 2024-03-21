@@ -25,6 +25,7 @@ include("./Script/Fit_Model_2_RO_Data/run_par_fit.jl")
 include("./Script/Fit_Model_2_RO_Data/run_crossval.jl")
 include("./Script/paper_results/weather_plot.jl")
 include("./Script/paper_results/model_data.jl")
+include("./Script/paper_results/plant_var_vs_weather.jl")
 #include("Script/Test_static_N/test_static_N.jl")
 
 function run_opt_test(folder_name::String,stand_type::Symbol,weight_GPP::Real)
@@ -179,11 +180,15 @@ function test_train_val()
 end
 
 function run_get_data_work_list()  
-    fld = "crossval_20240306_shared_W_1_5_run"
+    fld_F = "crossval_20240306_F_W_1_5_run"
+    fld_C = "crossval_20240306_C_W_1_5_run"
+
     for i = 1:10
         println("----Run_$(i)---")
-        get_sum_stat(fld*"_$(i)","result_F")      
-        get_sum_stat(fld*"_$(i)","result_C")     
+        println("--Fertilized")
+        get_sum_stat(fld_F*"_$(i)","result")  
+        println("--Control")     
+        get_sum_stat(fld_C*"_$(i)","result")        
     end
 end   
 
@@ -198,4 +203,6 @@ end
 #run_crossval_work_list()
 #run_get_data_work_list() 
 #create_weather_plot()
-draw_shared_model()
+#draw_shared_model()
+#draw_nonshared_model()
+plant_var_vs_weather()
