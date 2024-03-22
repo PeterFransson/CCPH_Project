@@ -90,11 +90,17 @@ function plant_var_vs_weather()
     pl5_4 = plot(xlabel="θ (%)",ylabel="",legends=false,ylims = (2,15),xlims = (6,30),yaxis=false,guidefontsize=12,ytickfontsize=12)
 
     Tmean = [[weather.Tmean for weather in raw_input_F[i].weather_growth] for i in 1:4]
+    Tmin = [[weather.Tmin for weather in raw_input_F[i].weather_growth] for i in 1:4]
+    Tmax = [[weather.Tmax for weather in raw_input_F[i].weather_growth] for i in 1:4]
     θ_F = [[weather.θₛ*100 for weather in raw_input_F[i].weather_growth] for i in 1:4]
     θ_C = [[weather.θₛ*100 for weather in raw_input_C[i].weather_growth] for i in 1:4]
     Radₜₒ = [[weather.Radₜₒ for weather in  raw_input_F[i].weather_growth] for i in 1:4] 
     I₀ = Radₜₒ*2.3*10^-6 #mol m⁻²
     VPD = [[first(get_env_from_data(weather)).VPD/1000 for weather in  raw_input_F[i].weather_growth] for i in 1:4]
+    daylength = [[CCPH.daylighthour(weather.lat*pi/180,CCPH.Dates.dayofyear(weather.date)) for weather in  raw_input_F[i].weather_growth] for i in 1:4]
+    ψₛ_F = [CCPH.θₛ2ψₛ.(θ_F[i]/100) for i in 1:4]
+    ψₛ_C = [CCPH.θₛ2ψₛ.(θ_C[i]/100) for i in 1:4]
+
 
     pl6 = plot(xlabel="gₛ (mol s⁻¹ m⁻²)",ylabel="Nmf (%)",legends=false, xlims = (0.04,0.18), ylims = (0,5),guidefontsize=12,ytickfontsize=12)
 
@@ -223,4 +229,12 @@ function plant_var_vs_weather()
     end
 
     plot(pl8[1],pl8[2],pl8[3],pl8[4],layout=(1,4),size=(900,300),left_margin = 4Plots.mm)    
+
+    #Weather max-min
+    println("Tₐ: $(minimum(minimum.(Tmin)))-$(maximum(maximum.(Tmax)))") 
+    println("I₀: $(minimum(minimum.(I₀)))-$(maximum(maximum.(I₀)))") 
+    println("VPD: $(minimum(minimum.(VPD)))-$(maximum(maximum.(VPD)))")    
+    println("θₛ: $(minimum(minimum.(θ_F)))-$(maximum(maximum.(θ_F))) (F), $(minimum(minimum.(θ_C)))-$(maximum(maximum.(θ_C))) (C)")
+    println("-ψₛ: $(minimum(minimum.(-ψₛ_F)))-$(maximum(maximum.(-ψₛ_F))) (F), $(minimum(minimum.(-ψₛ_C)))-$(maximum(maximum.(-ψₛ_C))) (C)")
+    println("ΔTg: $(minimum(minimum.(daylength)))-$(maximum(maximum.(daylength)))")  
 end
