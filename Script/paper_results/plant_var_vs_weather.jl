@@ -46,7 +46,8 @@ function get_plant_var(par::ModelPar,raw_input::Vector{RawInputData};stand_type:
 end
 
 function plant_var_vs_weather()
-    fld = "crossval_20240306_shared_W_1_5_run_4"
+    #fld = "crossval_20240306_shared_W_1_5_run_4"
+    fld = "crossval_20240325_shared_W_1_5_run_9"
 
     stand_type_F = JLD.load("output/"*fld*"/result_F.jld","stand_type")
     raw_input_F = RawInputData(;stand_type=stand_type_F)

@@ -52,7 +52,7 @@ function run_model(par::ModelPar,raw_input::Vector{RawInputData},mean_Nₘ_f::Re
 end
 
 function test_static_N()
-    fld = "crossval_20240306_shared_W_1_5_run_4"
+    fld = "crossval_20240325_shared_W_1_5_run_9"
     
     #--Fertilized--
     println("--Fertilized--")

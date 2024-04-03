@@ -28,12 +28,12 @@ function get_sum_stat_crossval(folder_name::String,filename::String)
     GPP_model,Ec_model,Nₘ_f_model = run_model(par,raw_input;stand_type=stand_type)
 
     log_L = Calc_logP_GPP_Ec_Nm_f(GPP_model,Ec_model,Nₘ_f_model,GPP_data,Ec_data,par,raw_input;weight_GPP=weight_GPP)
-
+    
     GPP_R2_train,GPP_RMSE_train,GPP_MAPE_train,GPP_cor_train = get_sum_stat([GPP_data[i][train_set[i]] for i in 1:4],[GPP_model[i][train_set[i]]*raw_input[i].ζ for i in 1:4])
     Ec_R2_train,Ec_RMSE_train,Ec_MAPE_train,Ec_cor_train = get_sum_stat([Ec_data[i][train_set[i]] for i in 1:4],[Ec_model[i][train_set[i]] for i in 1:4])
 
-    GPP_R2_val,GPP_RMSE_val,GPP_MAPE_val,GPP_cor_val = get_sum_stat([GPP_data[i][val_set[i]] for i in 1:4],[GPP_model[i][val_set[i]]*raw_input[i].ζ for i in 1:4])
-    Ec_R2_val,Ec_RMSE_val,Ec_MAPE_val,Ec_cor_val = get_sum_stat([Ec_data[i][val_set[i]] for i in 1:4],[Ec_model[i][val_set[i]] for i in 1:4])
+    GPP_R2_val,GPP_RMSE_val,GPP_MAPE_val,GPP_cor_val = get_sum_stat([GPP_data[i][val_set[i]] for i in 1:4],[convert(Array{Float64,1},GPP_model[i][val_set[i]]*raw_input[i].ζ) for i in 1:4])
+    Ec_R2_val,Ec_RMSE_val,Ec_MAPE_val,Ec_cor_val = get_sum_stat([Ec_data[i][val_set[i]] for i in 1:4],[convert(Array{Float64,1},Ec_model[i][val_set[i]]) for i in 1:4])
 
     result_stat_train = ModelStat(TypeStat(GPP_R2_train,GPP_RMSE_train,GPP_MAPE_train,GPP_cor_train),
     TypeStat(Ec_R2_train,Ec_RMSE_train,Ec_MAPE_train,Ec_cor_train),
@@ -104,7 +104,8 @@ function write_stat2file(filename::String,
 end
 
 function draw_shared_model()
-    fld = "crossval_20240306_shared_W_1_5_run_4"
+    #fld = "crossval_20240306_shared_W_1_5_run_4"
+    fld = "crossval_20240325_shared_W_1_5_run_9"
 
     stand_type_F = JLD.load("output/"*fld*"/result_F.jld","stand_type")
     raw_input_F = RawInputData(;stand_type=stand_type_F)
@@ -289,7 +290,8 @@ function draw_shared_model()
     plot(pl5,pl7,pl6,pl8,layout=(2,2),size=(900,900))
     savefig(save_fld*"/Error.svg")
 
-    fld = "crossval_20240306_shared_W_1_5_run"
+    #fld = "crossval_20240306_shared_W_1_5_run"
+    fld = "crossval_20240325_shared_W_1_5_run"
     
     RMSE_GPP_F = zeros(20)
     MAPE_GPP_F = zeros(20)
@@ -370,8 +372,10 @@ function draw_shared_model()
 end
 
 function draw_nonshared_model()
-    fld_F = "crossval_20240306_F_W_1_5_run_4"
-    fld_C = "crossval_20240306_C_W_1_5_run_4"
+    #fld_F = "crossval_20240306_F_W_1_5_run_4"
+    #fld_C = "crossval_20240306_C_W_1_5_run_4"
+    fld_F = "crossval_20240325_F_W_1_5_run_3"
+    fld_C = "crossval_20240325_C_W_1_5_run_6"
 
     stand_type_F = JLD.load("output/"*fld_F*"/result.jld","stand_type")
     raw_input_F = RawInputData(;stand_type=stand_type_F)
@@ -556,8 +560,10 @@ function draw_nonshared_model()
     plot(pl5,pl7,pl6,pl8,layout=(2,2),size=(900,900))
     savefig(save_fld*"/Error.svg")
 
-    fld_F = "crossval_20240306_F_W_1_5_run"
-    fld_C = "crossval_20240306_C_W_1_5_run"
+    #fld_F = "crossval_20240306_F_W_1_5_run"
+    #fld_C = "crossval_20240306_C_W_1_5_run"
+    fld_F = "crossval_20240325_F_W_1_5_run"
+    fld_C = "crossval_20240325_C_W_1_5_run"
     
     RMSE_GPP_F = zeros(20)
     MAPE_GPP_F = zeros(20)

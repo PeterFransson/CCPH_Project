@@ -416,7 +416,7 @@ function get_sum_stat(folder_name::String,filename::String)
     GPP_data = get_GPP_data.(raw_input;stand_type=stand_type) 
 
     #Load opt val 
-    x_opt = JLD.load("output/"*folder_name*"/"*filename*".jld","x_opt")   
+    @show x_opt = JLD.load("output/"*folder_name*"/"*filename*".jld","x_opt")   
         
     par = ModelPar(x_opt;stand_type=stand_type)
 
@@ -424,6 +424,7 @@ function get_sum_stat(folder_name::String,filename::String)
 
     log_L = Calc_logP_GPP_Ec_Nm_f(GPP_model,Ec_model,Nₘ_f_model,GPP_data,Ec_data,par,raw_input;weight_GPP=weight_GPP)
 
+    
     GPP_R2,GPP_RMSE,GPP_MAPE,GPP_cor = get_sum_stat(GPP_data,[GPP_model[i]*raw_input[i].ζ for i in 1:4])
     Ec_R2,Ec_RMSE,Ec_MAPE,Ec_cor = get_sum_stat(Ec_data,Ec_model)
 
