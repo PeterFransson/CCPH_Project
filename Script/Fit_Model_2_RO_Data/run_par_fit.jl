@@ -431,5 +431,5 @@ function get_sum_stat(folder_name::String,filename::String)
     println("GPP: R²:$(round(GPP_R2, digits=2)), RMSE:$(round(GPP_RMSE, digits=2)), MAPE:$(round(GPP_MAPE, digits=2)), corr:$(round(GPP_cor, digits=2))")
     println("Ec: R²:$(round(Ec_R2, digits=2)), RMSE:$(round(Ec_RMSE, digits=2)), MAPE:$(round(Ec_MAPE, digits=2)), corr:$(round(Ec_cor, digits=2))")
     println("Log-likelihood: $(round(log_L, digits=2))")
-    return nothing
+    return log_L
 end

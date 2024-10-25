@@ -57,6 +57,7 @@ function write_par2file(filename::String,par::ModelPar,stand_type::Symbol)
         println(io,"Kₓₗ₀: $(round(par.Kₓₗ₀,sigdigits=2))")
         println(io,"a_GPP: $(round(par.a_GPP,digits=2))")
         println(io,"b_GPP: $(round(par.b_GPP,digits=2))")
+        println(io,"Nₛ: $(round(par.Nₛ-0.009,sigdigits=2))")
     end
 end
 function write_stat2file(filename::String,
@@ -105,7 +106,8 @@ end
 
 function draw_shared_model()
     #fld = "crossval_20240306_shared_W_1_5_run_4"
-    fld = "crossval_20240325_shared_W_1_5_run_9"
+    #fld = "crossval_20240325_shared_W_1_5_run_9"
+    fld = "crossval_20241014_shared_W_1_5_run_9"
 
     stand_type_F = JLD.load("output/"*fld*"/result_F.jld","stand_type")
     raw_input_F = RawInputData(;stand_type=stand_type_F)

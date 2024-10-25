@@ -10,7 +10,7 @@ end
 function CCPH.WeatherDataStruct(data::DataFrames.DataFrame,
     data_idx::Integer;
     lat::Real=64,
-    Cₐ::Real=400.0/10.0,
+    #Cₐ::Real=400.0/10.0,
     P::Real=1.0*10^5)
     
     d = data.Date[data_idx]
@@ -22,7 +22,7 @@ function CCPH.WeatherDataStruct(data::DataFrames.DataFrame,
     ,data.VP[data_idx]*100,
     data.Radiation[data_idx]*10^6,
     data.SWC[data_idx]/100,
-    Cₐ,
+    data.CO2[data_idx]/10.0,#Cₐ,
     P)
     return data_day
 end
