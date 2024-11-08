@@ -52,7 +52,8 @@ function run_model(par::ModelPar,raw_input::Vector{RawInputData},mean_Nₘ_f::Re
 end
 
 function test_static_N()
-    fld = "crossval_20240325_shared_W_1_5_run_9"
+    #fld = "crossval_20240325_shared_W_1_5_run_9"
+    fld = "crossval_20241014_shared_W_1_5_run_9"
     
     #--Fertilized--
     println("--Fertilized--")
@@ -74,7 +75,7 @@ function test_static_N()
     println("GPP: R²:$(GPP_R2), RMSE:$(GPP_RMSE), MAPE:$(GPP_MAPE), corr:$(GPP_cor)")
     println("Ec: R²:$(Ec_R2), RMSE:$(Ec_RMSE), MAPE:$(Ec_MAPE), corr:$(Ec_cor)")
 
-    @show mean_Nₘ_f = sum(sum.(Nₘ_f_model))/sum(length.(Nₘ_f_model))
+    @show mean_Nₘ_f = 0.0194#0.0194 #Lim et al. 2015
 
     GPP_model,Ec_model,Nₘ_f_model = run_model(par,raw_input,mean_Nₘ_f;stand_type=stand_type)
 
@@ -105,7 +106,7 @@ function test_static_N()
     println("GPP: R²:$(GPP_R2), RMSE:$(GPP_RMSE), MAPE:$(GPP_MAPE), corr:$(GPP_cor)")
     println("Ec: R²:$(Ec_R2), RMSE:$(Ec_RMSE), MAPE:$(Ec_MAPE), corr:$(Ec_cor)")
 
-    @show mean_Nₘ_f = sum(sum.(Nₘ_f_model))/sum(length.(Nₘ_f_model))
+    @show mean_Nₘ_f = 0.0116#0.0116 #Lim et al. 2015
 
     GPP_model,Ec_model,Nₘ_f_model = run_model(par,raw_input,mean_Nₘ_f;stand_type=stand_type)
 

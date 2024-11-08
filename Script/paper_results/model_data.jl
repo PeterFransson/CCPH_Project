@@ -57,7 +57,7 @@ function write_par2file(filename::String,par::ModelPar,stand_type::Symbol)
         println(io,"Kₓₗ₀: $(round(par.Kₓₗ₀,sigdigits=2))")
         println(io,"a_GPP: $(round(par.a_GPP,digits=2))")
         println(io,"b_GPP: $(round(par.b_GPP,digits=2))")
-        println(io,"Nₛ: $(round(par.Nₛ-0.009,sigdigits=2))")
+        println(io,"Nᵤ: $(round(par.Nₛ-0.0056,sigdigits=2))")
     end
 end
 function write_stat2file(filename::String,
@@ -107,7 +107,7 @@ end
 function draw_shared_model()
     #fld = "crossval_20240306_shared_W_1_5_run_4"
     #fld = "crossval_20240325_shared_W_1_5_run_9"
-    fld = "crossval_20241014_shared_W_1_5_run_9"
+    fld = "crossval_20241105_shared_W_1_5_run_9"
 
     stand_type_F = JLD.load("output/"*fld*"/result_F.jld","stand_type")
     raw_input_F = RawInputData(;stand_type=stand_type_F)
@@ -293,20 +293,24 @@ function draw_shared_model()
     savefig(save_fld*"/Error.svg")
 
     #fld = "crossval_20240306_shared_W_1_5_run"
-    fld = "crossval_20240325_shared_W_1_5_run"
-    
+    fld = "crossval_20241105_shared_W_1_5_run"
+        
+    R2_GPP_F = zeros(20)
     RMSE_GPP_F = zeros(20)
     MAPE_GPP_F = zeros(20)
     cor_GPP_F = zeros(20)
 
+    R2_Ec_F = zeros(20)
     RMSE_Ec_F = zeros(20)
     MAPE_Ec_F = zeros(20)
     cor_Ec_F = zeros(20)
 
+    R2_GPP_C = zeros(20)
     RMSE_GPP_C = zeros(20)
     MAPE_GPP_C = zeros(20)
     cor_GPP_C = zeros(20)
 
+    R2_Ec_C = zeros(20)
     RMSE_Ec_C = zeros(20)
     MAPE_Ec_C = zeros(20)
     cor_Ec_C = zeros(20)
@@ -314,6 +318,8 @@ function draw_shared_model()
     for i = 1:10
         result_stat_F_train,result_stat_F_val = get_sum_stat_crossval(fld*"_$(i)","result_F")
 
+        R2_GPP_F[i] = result_stat_F_train.GPP.R2
+        R2_GPP_F[i+10] = result_stat_F_val.GPP.R2
         RMSE_GPP_F[i] = result_stat_F_train.GPP.RMSE
         RMSE_GPP_F[i+10] = result_stat_F_val.GPP.RMSE
         MAPE_GPP_F[i] = result_stat_F_train.GPP.MAPE
@@ -321,6 +327,8 @@ function draw_shared_model()
         cor_GPP_F[i] = result_stat_F_train.GPP.cor
         cor_GPP_F[i+10] = result_stat_F_val.GPP.cor
 
+        R2_Ec_F[i] = result_stat_F_train.Ec.R2
+        R2_Ec_F[i+10] = result_stat_F_val.Ec.R2
         RMSE_Ec_F[i] = result_stat_F_train.Ec.RMSE
         RMSE_Ec_F[i+10] = result_stat_F_val.Ec.RMSE
         MAPE_Ec_F[i] = result_stat_F_train.Ec.MAPE
@@ -330,6 +338,8 @@ function draw_shared_model()
 
         result_stat_C_train,result_stat_C_val = get_sum_stat_crossval(fld*"_$(i)","result_C")
 
+        R2_GPP_C[i] = result_stat_C_train.GPP.R2
+        R2_GPP_C[i+10] = result_stat_C_val.GPP.R2
         RMSE_GPP_C[i] = result_stat_C_train.GPP.RMSE
         RMSE_GPP_C[i+10] = result_stat_C_val.GPP.RMSE
         MAPE_GPP_C[i] = result_stat_C_train.GPP.MAPE
@@ -337,6 +347,8 @@ function draw_shared_model()
         cor_GPP_C[i] = result_stat_C_train.GPP.cor
         cor_GPP_C[i+10] = result_stat_C_val.GPP.cor
 
+        R2_Ec_C[i] = result_stat_C_train.Ec.R2
+        R2_Ec_C[i+10] = result_stat_C_val.Ec.R2
         RMSE_Ec_C[i] = result_stat_C_train.Ec.RMSE
         RMSE_Ec_C[i+10] = result_stat_C_val.Ec.RMSE
         MAPE_Ec_C[i] = result_stat_C_train.Ec.MAPE
@@ -345,39 +357,45 @@ function draw_shared_model()
         cor_Ec_C[i+10] = result_stat_C_val.Ec.cor
     end
     
-    pl1_1 = groupedbar(nam, RMSE_GPP_F, group = sx, ylabel = "RMSE",legends=false,title="GPP")
-    pl1_2 = groupedbar(nam, MAPE_GPP_F, group = sx, ylabel = "MAPE",legends=false)    
-    pl1_3 = groupedbar(nam, cor_GPP_F, group = sx, ylabel = "COR",legends=false)
-    pl1_fin = plot(pl1_1,pl1_2,pl1_3,layout=(3,1),left_margin = 3Plots.mm,guidefontsize=12,ytickfontsize=12,xtickfontsize=12)
+    pl1_1 = groupedbar(nam, R2_GPP_F, group = sx, ylabel = "R²",legends=false,title="GPP")
+    pl1_2 = groupedbar(nam, RMSE_GPP_F, group = sx, ylabel = "RMSE",legends=false,title="GPP")
+    pl1_3 = groupedbar(nam, MAPE_GPP_F, group = sx, ylabel = "MAPE",legends=false)    
+    pl1_4 = groupedbar(nam, cor_GPP_F, group = sx, ylabel = "COR",legends=false)
+    pl1_fin = plot(pl1_1,pl1_2,pl1_3,pl1_4,layout=(4,1),left_margin = 3Plots.mm,guidefontsize=12,ytickfontsize=12,xtickfontsize=12)
     savefig(save_fld*"/Stat_GPP_F.svg")
 
-    pl2_1 = groupedbar(nam, RMSE_Ec_F, group = sx, ylabel = "RMSE",legends=false,title="Ec")
-    pl2_2 = groupedbar(nam, MAPE_Ec_F, group = sx, ylabel = "MAPE",legends=false)    
-    pl2_3 = groupedbar(nam, cor_Ec_F, group = sx, ylabel = "COR",legends=false)
-    pl2_fin = plot(pl2_1,pl2_2,pl2_3,layout=(3,1),left_margin = 3Plots.mm,guidefontsize=12,ytickfontsize=12,xtickfontsize=12)
+    pl2_1 = groupedbar(nam, R2_Ec_F, group = sx, ylabel = "R²",legends=false,title="Ec")
+    pl2_2 = groupedbar(nam, RMSE_Ec_F, group = sx, ylabel = "RMSE",legends=false)
+    pl2_3 = groupedbar(nam, MAPE_Ec_F, group = sx, ylabel = "MAPE",legends=false)    
+    pl2_4 = groupedbar(nam, cor_Ec_F, group = sx, ylabel = "COR",legends=false)
+    pl2_fin = plot(pl2_1,pl2_2,pl2_3,pl2_4,layout=(4,1),left_margin = 3Plots.mm,guidefontsize=12,ytickfontsize=12,xtickfontsize=12)
     savefig(save_fld*"/Stat_Ec_F.svg")
 
-    pl3_1 = groupedbar(nam, RMSE_GPP_C, group = sx, ylabel = "RMSE",legends=false,title="GPP")
-    pl3_2 = groupedbar(nam, MAPE_GPP_C, group = sx, ylabel = "MAPE",legends=false)    
-    pl3_3 = groupedbar(nam, cor_GPP_C, group = sx, ylabel = "COR",legends=false)
-    pl3_fin = plot(pl3_1,pl3_2,pl3_3,layout=(3,1),left_margin = 3Plots.mm,guidefontsize=12,ytickfontsize=12,xtickfontsize=12)
+    pl3_1 = groupedbar(nam, R2_GPP_C, group = sx, ylabel = "R²",legends=false,title="GPP")
+    pl3_2 = groupedbar(nam, RMSE_GPP_C, group = sx, ylabel = "RMSE",legends=false)
+    pl3_3 = groupedbar(nam, MAPE_GPP_C, group = sx, ylabel = "MAPE",legends=false)    
+    pl3_4 = groupedbar(nam, cor_GPP_C, group = sx, ylabel = "COR",legends=false)
+    pl3_fin = plot(pl3_1,pl3_2,pl3_3,pl3_4,layout=(4,1),left_margin = 3Plots.mm,guidefontsize=12,ytickfontsize=12,xtickfontsize=12)
     savefig(save_fld*"/Stat_GPP_C.svg")
 
-    pl4_1 = groupedbar(nam, RMSE_Ec_C, group = sx, ylabel = "RMSE",legends=false,title="Ec")
-    pl4_2 = groupedbar(nam, MAPE_Ec_C, group = sx, ylabel = "MAPE",legends=false)    
-    pl4_3 = groupedbar(nam, cor_Ec_C, group = sx, ylabel = "COR",legends=false)
-    pl4_fin = plot(pl4_1,pl4_2,pl4_3,layout=(3,1),left_margin = 3Plots.mm,guidefontsize=12,ytickfontsize=12,xtickfontsize=12)
+    pl4_1 = groupedbar(nam, R2_Ec_C, group = sx, ylabel = "R²",legends=false,title="Ec")
+    pl4_2 = groupedbar(nam, RMSE_Ec_C, group = sx, ylabel = "RMSE",legends=false)
+    pl4_3 = groupedbar(nam, MAPE_Ec_C, group = sx, ylabel = "MAPE",legends=false)    
+    pl4_4 = groupedbar(nam, cor_Ec_C, group = sx, ylabel = "COR",legends=false)
+    pl4_fin = plot(pl4_1,pl4_2,pl4_3,pl4_4,layout=(4,1),left_margin = 3Plots.mm,guidefontsize=12,ytickfontsize=12,xtickfontsize=12)
     savefig(save_fld*"/Stat_Ec_C.svg")
 
-    plot(pl1_fin,pl2_fin,pl3_fin,pl4_fin,layout=(1,4),size=(1800,900))
+    plot(pl1_fin,pl2_fin,pl3_fin,pl4_fin,layout=(1,4),size=(2400,1200))
     savefig(save_fld*"/Stat.svg")
 end
 
 function draw_nonshared_model()
     #fld_F = "crossval_20240306_F_W_1_5_run_4"
     #fld_C = "crossval_20240306_C_W_1_5_run_4"
-    fld_F = "crossval_20240325_F_W_1_5_run_3"
-    fld_C = "crossval_20240325_C_W_1_5_run_6"
+    #fld_F = "crossval_20240325_F_W_1_5_run_3"
+    #fld_C = "crossval_20240325_C_W_1_5_run_6"
+    fld_F = "crossval_20241105_F_W_1_5_run_9"
+    fld_C = "crossval_20241105_C_W_1_5_run_7"
 
     stand_type_F = JLD.load("output/"*fld_F*"/result.jld","stand_type")
     raw_input_F = RawInputData(;stand_type=stand_type_F)
@@ -564,21 +582,25 @@ function draw_nonshared_model()
 
     #fld_F = "crossval_20240306_F_W_1_5_run"
     #fld_C = "crossval_20240306_C_W_1_5_run"
-    fld_F = "crossval_20240325_F_W_1_5_run"
-    fld_C = "crossval_20240325_C_W_1_5_run"
+    fld_F = "crossval_20241105_F_W_1_5_run"
+    fld_C = "crossval_20241105_C_W_1_5_run"
     
+    R2_GPP_F = zeros(20)
     RMSE_GPP_F = zeros(20)
     MAPE_GPP_F = zeros(20)
     cor_GPP_F = zeros(20)
 
+    R2_Ec_F = zeros(20)
     RMSE_Ec_F = zeros(20)
     MAPE_Ec_F = zeros(20)
     cor_Ec_F = zeros(20)
 
+    R2_GPP_C = zeros(20)
     RMSE_GPP_C = zeros(20)
     MAPE_GPP_C = zeros(20)
     cor_GPP_C = zeros(20)
 
+    R2_Ec_C = zeros(20)
     RMSE_Ec_C = zeros(20)
     MAPE_Ec_C = zeros(20)
     cor_Ec_C = zeros(20)
@@ -586,6 +608,8 @@ function draw_nonshared_model()
     for i = 1:10
         result_stat_F_train,result_stat_F_val = get_sum_stat_crossval(fld_F*"_$(i)","result")
 
+        R2_GPP_F[i] = result_stat_F_train.GPP.R2
+        R2_GPP_F[i+10] = result_stat_F_val.GPP.R2
         RMSE_GPP_F[i] = result_stat_F_train.GPP.RMSE
         RMSE_GPP_F[i+10] = result_stat_F_val.GPP.RMSE
         MAPE_GPP_F[i] = result_stat_F_train.GPP.MAPE
@@ -593,6 +617,8 @@ function draw_nonshared_model()
         cor_GPP_F[i] = result_stat_F_train.GPP.cor
         cor_GPP_F[i+10] = result_stat_F_val.GPP.cor
 
+        R2_Ec_F[i] = result_stat_F_train.Ec.R2
+        R2_Ec_F[i+10] = result_stat_F_val.Ec.R2
         RMSE_Ec_F[i] = result_stat_F_train.Ec.RMSE
         RMSE_Ec_F[i+10] = result_stat_F_val.Ec.RMSE
         MAPE_Ec_F[i] = result_stat_F_train.Ec.MAPE
@@ -602,6 +628,8 @@ function draw_nonshared_model()
 
         result_stat_C_train,result_stat_C_val = get_sum_stat_crossval(fld_C*"_$(i)","result")
 
+        R2_GPP_C[i] = result_stat_C_train.GPP.R2
+        R2_GPP_C[i+10] = result_stat_C_val.GPP.R2
         RMSE_GPP_C[i] = result_stat_C_train.GPP.RMSE
         RMSE_GPP_C[i+10] = result_stat_C_val.GPP.RMSE
         MAPE_GPP_C[i] = result_stat_C_train.GPP.MAPE
@@ -609,6 +637,8 @@ function draw_nonshared_model()
         cor_GPP_C[i] = result_stat_C_train.GPP.cor
         cor_GPP_C[i+10] = result_stat_C_val.GPP.cor
 
+        R2_Ec_C[i] = result_stat_C_train.Ec.R2
+        R2_Ec_C[i+10] = result_stat_C_val.Ec.R2
         RMSE_Ec_C[i] = result_stat_C_train.Ec.RMSE
         RMSE_Ec_C[i+10] = result_stat_C_val.Ec.RMSE
         MAPE_Ec_C[i] = result_stat_C_train.Ec.MAPE
@@ -617,30 +647,34 @@ function draw_nonshared_model()
         cor_Ec_C[i+10] = result_stat_C_val.Ec.cor
     end
     
-    pl1_1 = groupedbar(nam, RMSE_GPP_F, group = sx, ylabel = "RMSE",legends=false,title="GPP")
-    pl1_2 = groupedbar(nam, MAPE_GPP_F, group = sx, ylabel = "MAPE",legends=false)    
-    pl1_3 = groupedbar(nam, cor_GPP_F, group = sx, ylabel = "COR",legends=false)
-    pl1_fin = plot(pl1_1,pl1_2,pl1_3,layout=(3,1),left_margin = 3Plots.mm,guidefontsize=12,ytickfontsize=12,xtickfontsize=12)
+    pl1_1 = groupedbar(nam, R2_GPP_F, group = sx, ylabel = "R²",legends=false,title="GPP")
+    pl1_2 = groupedbar(nam, RMSE_GPP_F, group = sx, ylabel = "RMSE",legends=false,title="GPP")
+    pl1_3 = groupedbar(nam, MAPE_GPP_F, group = sx, ylabel = "MAPE",legends=false)    
+    pl1_4 = groupedbar(nam, cor_GPP_F, group = sx, ylabel = "COR",legends=false)
+    pl1_fin = plot(pl1_1,pl1_2,pl1_3,pl1_4,layout=(4,1),left_margin = 3Plots.mm,guidefontsize=12,ytickfontsize=12,xtickfontsize=12)
     savefig(save_fld*"/Stat_GPP_F.svg")
 
-    pl2_1 = groupedbar(nam, RMSE_Ec_F, group = sx, ylabel = "RMSE",legends=false,title="Ec")
-    pl2_2 = groupedbar(nam, MAPE_Ec_F, group = sx, ylabel = "MAPE",legends=false)    
-    pl2_3 = groupedbar(nam, cor_Ec_F, group = sx, ylabel = "COR",legends=false)
-    pl2_fin = plot(pl2_1,pl2_2,pl2_3,layout=(3,1),left_margin = 3Plots.mm,guidefontsize=12,ytickfontsize=12,xtickfontsize=12)
+    pl2_1 = groupedbar(nam, R2_Ec_F, group = sx, ylabel = "R²",legends=false,title="Ec")
+    pl2_2 = groupedbar(nam, RMSE_Ec_F, group = sx, ylabel = "RMSE",legends=false)
+    pl2_3 = groupedbar(nam, MAPE_Ec_F, group = sx, ylabel = "MAPE",legends=false)    
+    pl2_4 = groupedbar(nam, cor_Ec_F, group = sx, ylabel = "COR",legends=false)
+    pl2_fin = plot(pl2_1,pl2_2,pl2_3,pl2_4,layout=(4,1),left_margin = 3Plots.mm,guidefontsize=12,ytickfontsize=12,xtickfontsize=12)
     savefig(save_fld*"/Stat_Ec_F.svg")
 
-    pl3_1 = groupedbar(nam, RMSE_GPP_C, group = sx, ylabel = "RMSE",legends=false,title="GPP")
-    pl3_2 = groupedbar(nam, MAPE_GPP_C, group = sx, ylabel = "MAPE",legends=false)    
-    pl3_3 = groupedbar(nam, cor_GPP_C, group = sx, ylabel = "COR",legends=false)
-    pl3_fin = plot(pl3_1,pl3_2,pl3_3,layout=(3,1),left_margin = 3Plots.mm,guidefontsize=12,ytickfontsize=12,xtickfontsize=12)
+    pl3_1 = groupedbar(nam, R2_GPP_C, group = sx, ylabel = "R²",legends=false,title="GPP")
+    pl3_2 = groupedbar(nam, RMSE_GPP_C, group = sx, ylabel = "RMSE",legends=false)
+    pl3_3 = groupedbar(nam, MAPE_GPP_C, group = sx, ylabel = "MAPE",legends=false)    
+    pl3_4 = groupedbar(nam, cor_GPP_C, group = sx, ylabel = "COR",legends=false)
+    pl3_fin = plot(pl3_1,pl3_2,pl3_3,pl3_4,layout=(4,1),left_margin = 3Plots.mm,guidefontsize=12,ytickfontsize=12,xtickfontsize=12)
     savefig(save_fld*"/Stat_GPP_C.svg")
 
-    pl4_1 = groupedbar(nam, RMSE_Ec_C, group = sx, ylabel = "RMSE",legends=false,title="Ec")
-    pl4_2 = groupedbar(nam, MAPE_Ec_C, group = sx, ylabel = "MAPE",legends=false)    
-    pl4_3 = groupedbar(nam, cor_Ec_C, group = sx, ylabel = "COR",legends=false)
-    pl4_fin = plot(pl4_1,pl4_2,pl4_3,layout=(3,1),left_margin = 3Plots.mm,guidefontsize=12,ytickfontsize=12,xtickfontsize=12)
+    pl4_1 = groupedbar(nam, R2_Ec_C, group = sx, ylabel = "R²",legends=false,title="Ec")
+    pl4_2 = groupedbar(nam, RMSE_Ec_C, group = sx, ylabel = "RMSE",legends=false)
+    pl4_3 = groupedbar(nam, MAPE_Ec_C, group = sx, ylabel = "MAPE",legends=false)    
+    pl4_4 = groupedbar(nam, cor_Ec_C, group = sx, ylabel = "COR",legends=false)
+    pl4_fin = plot(pl4_1,pl4_2,pl4_3,pl4_4,layout=(4,1),left_margin = 3Plots.mm,guidefontsize=12,ytickfontsize=12,xtickfontsize=12)
     savefig(save_fld*"/Stat_Ec_C.svg")
 
-    plot(pl1_fin,pl2_fin,pl3_fin,pl4_fin,layout=(1,4),size=(1800,900))
+    plot(pl1_fin,pl2_fin,pl3_fin,pl4_fin,layout=(1,4),size=(2400,1200))
     savefig(save_fld*"/Stat.svg")
 end

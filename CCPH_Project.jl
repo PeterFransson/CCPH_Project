@@ -26,7 +26,9 @@ include("./Script/Fit_Model_2_RO_Data/run_crossval.jl")
 include("./Script/paper_results/weather_plot.jl")
 include("./Script/paper_results/model_data.jl")
 include("./Script/paper_results/plant_var_vs_weather.jl")
-include("Script/Test_static_N/test_static_N.jl")
+include("./Script/Test_static_N/test_static_N.jl")
+include("./Script/Test_static_SWC/test_static_swc.jl")
+include("./Script/Test_Ns/test_Ns.jl")
 
 function run_opt_test(folder_name::String,stand_type::Symbol,weight_GPP::Real)
 
@@ -183,18 +185,22 @@ function run_get_data_work_list()
     #fld_F = "crossval_20240306_F_W_1_5_run"
     #fld_C = "crossval_20240306_C_W_1_5_run"
     #fld = "crossval_20240325_C_W_1_5_run"
-    fld = "crossval_20241014_shared_W_1_5_run"
+    #fld = "crossval_20241014_shared_W_1_5_run"
+    fld_F = "crossval_20241105_shared_W_1_5_run"#"crossval_20241105_F_W_1_5_run"
+    fld_C = "crossval_20241105_shared_W_1_5_run"#"crossval_20241105_C_W_1_5_run"
 
+    log_L_F = zeros(10)
+    log_L_C = zeros(10)
     for i = 1:10
         println("----Run_$(i)---")
         #get_sum_stat(fld*"_$(i)","result") 
         println("--Fertilized")
-        log_L_F = get_sum_stat(fld*"_$(i)","result_F")  
+        log_L_F[i] = get_sum_stat(fld_F*"_$(i)","result_F")  
         println("--Control")     
-        log_L_C = get_sum_stat(fld*"_$(i)","result_C")    
-        println("--Combined") 
-        println("Log-Like: $(log_L_F+log_L_C)")
+        log_L_C[i] = get_sum_stat(fld_C*"_$(i)","result_C")               
     end
+    println(argmax(log_L_F)) #Best run   
+    println(argmax(log_L_C)) #Best run 
 end   
 
 #test_train_val()
@@ -208,6 +214,8 @@ end
 #run_crossval_work_list()
 #run_get_data_work_list() 
 #create_weather_plot()
-draw_shared_model()
-#draw_nonshared_model()
+#draw_shared_model()
+draw_nonshared_model()
 #plant_var_vs_weather()
+#test_static_swc()
+#test_Ns()

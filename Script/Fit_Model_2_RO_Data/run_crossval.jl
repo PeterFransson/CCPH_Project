@@ -83,7 +83,7 @@ function run_crossval_opt(folder_name::String,
     (train_set,val_set,train_set_weekly,val_set_weekly) = CreateTrainValSet(raw_input) 
     
     #Nₛ,α_max,a_Jmax,Kₓₗ₀,τ,ΔS,a_GPP,b_GPP = x    
-    range = [(0.009,0.1),
+    range = [(0.0056,0.1),
     (0.1,0.5),
     (0.001,1.0),
     (0.0004,0.1),
@@ -166,7 +166,7 @@ function run_crossval_opt(folder_name::String,
     
     #Shared paramters
     #Nₛ_F,α_max,a_Jmax,Kₓₗ₀_F,τ,ΔS,a_GPP,b_GPP,Nₛ_C,Kₓₗ₀_C = x    
-    range = [(0.009,0.1),
+    range = [(0.0056,0.1),
     (0.1,0.5),
     (0.001,1.0),
     (0.0004,0.1),
@@ -174,7 +174,7 @@ function run_crossval_opt(folder_name::String,
     (10.0,25.0),
     (0.0001,5.0),
     (0.0001,3.0),
-    (0.0001,0.1),
+    (0.0056,0.1),
     (0.0004,0.1)]      
 
     res = BlackBoxOptim.bboptimize(x->opt_par_obj(x,
@@ -284,36 +284,36 @@ function run_crossval_work_list()
     #run_crossval_opt("crossval_20240325_C_W_1_5_run_9",:Control,1.5)
     #run_crossval_opt("crossval_20240325_C_W_1_5_run_10",:Control,1.5)
 
-    run_crossval_opt("crossval_20241014_shared_W_1_5_run_1",1.5)
-    run_crossval_opt("crossval_220241014_shared_W_1_5_run_2",1.5)
-    run_crossval_opt("crossval_20241014_shared_W_1_5_run_3",1.5)
-    run_crossval_opt("crossval_20241014_shared_W_1_5_run_4",1.5)
-    run_crossval_opt("crossval_20241014_shared_W_1_5_run_5",1.5)
-    run_crossval_opt("crossval_20241014_shared_W_1_5_run_6",1.5)
-    run_crossval_opt("crossval_20241014_shared_W_1_5_run_7",1.5)
-    run_crossval_opt("crossval_20241014_shared_W_1_5_run_8",1.5)
-    run_crossval_opt("crossval_20241014_shared_W_1_5_run_9",1.5)
-    run_crossval_opt("crossval_20241014_shared_W_1_5_run_10",1.5)
+    run_crossval_opt("crossval_20241105_shared_W_1_5_run_1",1.5)
+    run_crossval_opt("crossval_20241105_shared_W_1_5_run_2",1.5)
+    run_crossval_opt("crossval_20241105_shared_W_1_5_run_3",1.5)
+    run_crossval_opt("crossval_20241105_shared_W_1_5_run_4",1.5)
+    run_crossval_opt("crossval_20241105_shared_W_1_5_run_5",1.5)
+    run_crossval_opt("crossval_20241105_shared_W_1_5_run_6",1.5)
+    run_crossval_opt("crossval_20241105_shared_W_1_5_run_7",1.5)
+    run_crossval_opt("crossval_20241105_shared_W_1_5_run_8",1.5)
+    run_crossval_opt("crossval_20241105_shared_W_1_5_run_9",1.5)
+    run_crossval_opt("crossval_20241105_shared_W_1_5_run_10",1.5)
 
-    run_crossval_opt("crossval_20241014_F_W_1_5_run_1",:Fertilized,1.5)
-    run_crossval_opt("crossval_20241014_F_W_1_5_run_2",:Fertilized,1.5)
-    run_crossval_opt("crossval_20241014_F_W_1_5_run_3",:Fertilized,1.5)    
-    run_crossval_opt("crossval_20241014_F_W_1_5_run_4",:Fertilized,1.5)
-    run_crossval_opt("crossval_20241014_F_W_1_5_run_5",:Fertilized,1.5)
-    run_crossval_opt("crossval_20241014_F_W_1_5_run_6",:Fertilized,1.5)
-    run_crossval_opt("crossval_20241014_F_W_1_5_run_7",:Fertilized,1.5)
-    run_crossval_opt("crossval_20241014_F_W_1_5_run_8",:Fertilized,1.5)
-    run_crossval_opt("crossval_20241014_F_W_1_5_run_9",:Fertilized,1.5)
-    run_crossval_opt("crossval_20241014_F_W_1_5_run_10",:Fertilized,1.5)
+    run_crossval_opt("crossval_20241105_F_W_1_5_run_1",:Fertilized,1.5)
+    run_crossval_opt("crossval_20241105_F_W_1_5_run_2",:Fertilized,1.5)
+    run_crossval_opt("crossval_20241105_F_W_1_5_run_3",:Fertilized,1.5)    
+    run_crossval_opt("crossval_20241105_F_W_1_5_run_4",:Fertilized,1.5)
+    run_crossval_opt("crossval_20241105_F_W_1_5_run_5",:Fertilized,1.5)
+    run_crossval_opt("crossval_20241105_F_W_1_5_run_6",:Fertilized,1.5)
+    run_crossval_opt("crossval_20241105_F_W_1_5_run_7",:Fertilized,1.5)
+    run_crossval_opt("crossval_20241105_F_W_1_5_run_8",:Fertilized,1.5)
+    run_crossval_opt("crossval_20241105_F_W_1_5_run_9",:Fertilized,1.5)
+    run_crossval_opt("crossval_20241105_F_W_1_5_run_10",:Fertilized,1.5)
     
-    run_crossval_opt("crossval_20241014_C_W_1_5_run_1",:Control,1.5)
-    run_crossval_opt("crossval_20241014_C_W_1_5_run_2",:Control,1.5)
-    run_crossval_opt("crossval_20241014_C_W_1_5_run_3",:Control,1.5)
-    run_crossval_opt("crossval_20241014_C_W_1_5_run_4",:Control,1.5)
-    run_crossval_opt("crossval_20241014_C_W_1_5_run_5",:Control,1.5)
-    run_crossval_opt("crossval_20241014_C_W_1_5_run_6",:Control,1.5)
-    run_crossval_opt("crossval_20241014_C_W_1_5_run_7",:Control,1.5)
-    run_crossval_opt("crossval_20241014_C_W_1_5_run_8",:Control,1.5)
-    run_crossval_opt("crossval_20241014_C_W_1_5_run_9",:Control,1.5)
-    run_crossval_opt("crossval_20241014_C_W_1_5_run_10",:Control,1.5)
+    run_crossval_opt("crossval_20241105_C_W_1_5_run_1",:Control,1.5)
+    run_crossval_opt("crossval_20241105_C_W_1_5_run_2",:Control,1.5)
+    run_crossval_opt("crossval_20241105_C_W_1_5_run_3",:Control,1.5)
+    run_crossval_opt("crossval_20241105_C_W_1_5_run_4",:Control,1.5)
+    run_crossval_opt("crossval_20241105_C_W_1_5_run_5",:Control,1.5)
+    run_crossval_opt("crossval_20241105_C_W_1_5_run_6",:Control,1.5)
+    run_crossval_opt("crossval_20241105_C_W_1_5_run_7",:Control,1.5)
+    run_crossval_opt("crossval_20241105_C_W_1_5_run_8",:Control,1.5)
+    run_crossval_opt("crossval_20241105_C_W_1_5_run_9",:Control,1.5)
+    run_crossval_opt("crossval_20241105_C_W_1_5_run_10",:Control,1.5)
 end

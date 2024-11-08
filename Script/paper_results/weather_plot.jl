@@ -38,6 +38,11 @@ function create_weather_plot()
     plot(xlabel="2016",ylabel="",legends=false, ylims = (6,30),yaxis=false,guidefontsize=12),
     plot(xlabel="2017",ylabel="",legends=false, ylims = (6,30),yaxis=false,guidefontsize=12),
     plot(xlabel="2018",ylabel="",legends=false, ylims = (6,30),yaxis=false,guidefontsize=12)]
+
+    pl6 = [plot(xlabel="2015",ylabel="Cₐ (Pa)",legends=false, ylims = (38,41),guidefontsize=12,ytickfontsize=12), 
+    plot(xlabel="2016",ylabel="",legends=false, ylims = (38,41),yaxis=false,guidefontsize=12),
+    plot(xlabel="2017",ylabel="",legends=false, ylims = (38,41),yaxis=false,guidefontsize=12),
+    plot(xlabel="2018",ylabel="",legends=false, ylims = (38,41),yaxis=false,guidefontsize=12)]
     
     for i = 1:4
         date = [weather.date for weather in raw_input_F[i].weather_growth]
@@ -48,8 +53,9 @@ function create_weather_plot()
         θ_C = [weather.θₛ*100 for weather in raw_input_C[i].weather_growth]
         Radₜₒ = [weather.Radₜₒ for weather in  raw_input_F[i].weather_growth] 
         I₀ = Radₜₒ*2.3*10^-6 #mol m⁻²
+        Cₐ = [weather.Cₐ for weather in raw_input_F[i].weather_growth]
         daylength = [CCPH.daylighthour(weather.lat*pi/180,CCPH.Dates.dayofyear(weather.date)) for weather in  raw_input_F[i].weather_growth]
-        VPD = [first(get_env_from_data(weather)).VPD/1000 for weather in  raw_input_F[i].weather_growth]         
+        VPD = [first(get_env_from_data(weather)).VPD/1000 for weather in  raw_input_F[i].weather_growth] 
         
         start_tick = ""
         end_tick = ""
@@ -66,7 +72,9 @@ function create_weather_plot()
         plot!(pl4[i],xticks=([date[1],date[end]],[start_tick,end_tick]))
         plot!(pl5[i],date,θ_F,linecolor=:blue)
         plot!(pl5[i],date,θ_C,linecolor=:red)
-        plot!(pl5[i],xticks=([date[1],date[end]],[start_tick,end_tick]))        
+        plot!(pl5[i],xticks=([date[1],date[end]],[start_tick,end_tick]))    
+        plot!(pl6[i],date,Cₐ,linecolor=:blue)
+        plot!(pl6[i],xticks=([date[1],date[end]],[start_tick,end_tick]))    
     end   
 
     pl1_fin = plot(pl1[1],pl1[2],pl1[3],pl1[4],layout=(1,4),size=(900,300),left_margin = 4Plots.mm)
@@ -83,4 +91,7 @@ function create_weather_plot()
 
     pl5_fin = plot(pl5[1],pl5[2],pl5[3],pl5[4],layout=(1,4),size=(900,300),left_margin = 4Plots.mm)
     savefig(pl5_fin,folder_path*"/swc.svg") 
+
+    pl6_fin = plot(pl6[1],pl6[2],pl6[3],pl6[4],layout=(1,4),size=(900,300),left_margin = 4Plots.mm)
+    savefig(pl6_fin,folder_path*"/Ca.svg") 
 end
