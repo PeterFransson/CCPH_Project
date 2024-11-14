@@ -53,7 +53,7 @@ end
 
 function test_static_N()
     #fld = "crossval_20240325_shared_W_1_5_run_9"
-    fld = "crossval_20241014_shared_W_1_5_run_9"
+    fld = "crossval_20241105_shared_W_1_5_run_9"
     
     #--Fertilized--
     println("--Fertilized--")

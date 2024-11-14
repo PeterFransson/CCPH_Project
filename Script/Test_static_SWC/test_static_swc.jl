@@ -1,5 +1,5 @@
 function test_static_swc()
-    fld = "crossval_20241014_shared_W_1_5_run_9"
+    fld = "crossval_20241105_shared_W_1_5_run_9"
     
     #--Fertilized--
     println("--Fertilized--")
@@ -27,10 +27,11 @@ function test_static_swc()
     θₛ_growth_2017 = [weather.θₛ for weather in raw_input[3].weather_growth]
     θₛ_growth_2018 = [weather.θₛ for weather in raw_input[4].weather_growth]
     append!(θₛ_growth,θₛ_growth_2015,θₛ_growth_2016,θₛ_growth_2017,θₛ_growth_2018)
-    @show θₛ_mean = mean(θₛ_growth)
+    θₛ_mean = mean(θₛ_growth)
+    println("Mean θₛ=$(θₛ_mean)")
     
     raw_input_mean = deepcopy(raw_input)
-
+    
     #Change SWC (θₛ)
     for i in 1:4
         for j in eachindex(raw_input_mean[i].weather_raw)
@@ -77,7 +78,8 @@ function test_static_swc()
     θₛ_growth_2017 = [weather.θₛ for weather in raw_input[3].weather_growth]
     θₛ_growth_2018 = [weather.θₛ for weather in raw_input[4].weather_growth]
     append!(θₛ_growth,θₛ_growth_2015,θₛ_growth_2016,θₛ_growth_2017,θₛ_growth_2018)
-    @show θₛ_mean = mean(θₛ_growth)
+    θₛ_mean = mean(θₛ_growth)
+    println("Mean θₛ=$(θₛ_mean)")
     
     raw_input_mean = deepcopy(raw_input)
 
