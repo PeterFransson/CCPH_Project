@@ -75,7 +75,7 @@ function test_static_N()
     println("GPP: R²:$(GPP_R2), RMSE:$(GPP_RMSE), MAPE:$(GPP_MAPE), corr:$(GPP_cor)")
     println("Ec: R²:$(Ec_R2), RMSE:$(Ec_RMSE), MAPE:$(Ec_MAPE), corr:$(Ec_cor)")
 
-    @show mean_Nₘ_f = 0.0194#0.0194 #Lim et al. 2015
+    @show mean_Nₘ_f = 0.0155#0.0194 #Lim et al. 2015
 
     GPP_model,Ec_model,Nₘ_f_model = run_model(par,raw_input,mean_Nₘ_f;stand_type=stand_type)
 
@@ -106,7 +106,7 @@ function test_static_N()
     println("GPP: R²:$(GPP_R2), RMSE:$(GPP_RMSE), MAPE:$(GPP_MAPE), corr:$(GPP_cor)")
     println("Ec: R²:$(Ec_R2), RMSE:$(Ec_RMSE), MAPE:$(Ec_MAPE), corr:$(Ec_cor)")
 
-    @show mean_Nₘ_f = 0.0116#0.0116 #Lim et al. 2015
+    @show mean_Nₘ_f = 0.0155#0.0116 #Lim et al. 2015
 
     GPP_model,Ec_model,Nₘ_f_model = run_model(par,raw_input,mean_Nₘ_f;stand_type=stand_type)
 
