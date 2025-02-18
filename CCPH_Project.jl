@@ -30,6 +30,7 @@ include("./Script/Test_static_N/test_static_N.jl")
 include("./Script/Test_static_SWC/test_static_swc.jl")
 include("./Script/Test_Ns/test_Ns.jl")
 include("./Script/Test_gs_vs_I/test_gs_vs_I.jl")
+include("Script/get_c_i/get_c_i.jl")
 
 function run_opt_test(folder_name::String,stand_type::Symbol,weight_GPP::Real)
 
@@ -219,5 +220,6 @@ end
 #draw_nonshared_model()
 #plant_var_vs_weather()
 #test_static_swc()
-test_Ns()
+#test_Ns()
 #test_gs_vs_I()
+get_c_i()    
